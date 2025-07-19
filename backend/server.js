@@ -10,6 +10,8 @@ const commentRoutes = require('./routes/commentRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const userRoutes = require('./routes/userRoutes');
+const likeRoutes = require('./routes/likeRoutes');
+const followRoutes = require('./routes/followRoutes');
 
 
 const app = express();
@@ -33,6 +35,8 @@ app.use('/uploads', express.static('uploads'));
 app.use('/api/upload', uploadRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/posts', likeRoutes);
+app.use('/api/users', followRoutes);
 
 const PORT = process.env.PORT || 5000;
 

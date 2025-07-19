@@ -13,6 +13,8 @@ import CreatePostPage from './pages/CreatePostPage';
 import MyPostsPage from './pages/MyPostsPage';
 import Navbar from './components/Navbar';
 import ChatPage from './pages/ChatPage';
+import UsersListPage from './pages/UsersListPage';
+import ProfilePage from './pages/ProfilePage';
 
 const AppContent = () => {
   const location = useLocation();
@@ -28,6 +30,8 @@ const AppContent = () => {
         <Route path="/create-post" element={<CreatePostPage />} />
         <Route path="/myposts" element={<MyPostsPage />} />
         <Route path="/chat" element={<ChatPage />} />
+        <Route path="/users" element={<UsersListPage />} />
+        <Route path="/profile/:userId" element={<ProfilePage />} />
       </Routes>
     </>
   );

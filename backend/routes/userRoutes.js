@@ -3,12 +3,11 @@ const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
 const db = require('../db');
 
-// Lấy danh sách user (trừ chính mình)
+// Lấy danh sách user
 router.get('/', authMiddleware, async (req, res) => {
-  const userId = req.user.id;
   try {
     const [users] = await db.query(
-      'SELECT id, name, email FROM users WHERE id != ?', [userId]
+      'SELECT id, name, email FROM users ORDER BY name'
     );
     res.json(users);
   } catch (err) {

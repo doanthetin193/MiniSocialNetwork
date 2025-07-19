@@ -24,9 +24,12 @@ const getAllPosts = async (req, res) => {
   try {
     const [posts] = await db.query(`
       SELECT posts.id, posts.content, posts.image_url, posts.created_at,
-             users.id as user_id, users.name, users.email
+             users.id as user_id, users.name, users.email,
+             COUNT(post_likes.id) as likes_count
       FROM posts
       JOIN users ON posts.user_id = users.id
+      LEFT JOIN post_likes ON posts.id = post_likes.post_id
+      GROUP BY posts.id, users.id
       ORDER BY posts.created_at DESC
     `);
     res.json(posts);
@@ -41,10 +44,13 @@ const getMyPosts = async (req, res) => {
 
   try {
     const [posts] = await db.query(`
-      SELECT id, content, image_url, created_at
+      SELECT posts.id, posts.content, posts.image_url, posts.created_at,
+             COUNT(post_likes.id) as likes_count
       FROM posts
-      WHERE user_id = ?
-      ORDER BY created_at DESC
+      LEFT JOIN post_likes ON posts.id = post_likes.post_id
+      WHERE posts.user_id = ?
+      GROUP BY posts.id
+      ORDER BY posts.created_at DESC
     `, [userId]);
 
     res.json(posts);

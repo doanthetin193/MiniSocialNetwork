@@ -15,7 +15,10 @@ const CreatePostPage = () => {
         const formData = new FormData();
         formData.append('image', image);
 
-        const res = await axios.post('http://localhost:5000/api/upload', formData);
+        const token = localStorage.getItem('token');
+        const res = await axios.post('http://localhost:5000/api/upload/image', formData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         imageUrl = res.data.image_url;
       }
 
