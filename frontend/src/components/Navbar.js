@@ -1,10 +1,14 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useState } from 'react';
 import SearchUsers from './SearchUsers';
 import NotificationBell from './NotificationBell';
+import styles from './Navbar.module.css';
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const currentUser = JSON.parse(localStorage.getItem('user'));
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -12,32 +16,88 @@ const Navbar = () => {
     navigate('/login');
   };
 
+  const isActiveLink = (path) => location.pathname === path;
+
   return (
-    <nav style={{ 
-      backgroundColor: '#282c34', padding: '10px', 
-      display: 'flex', gap: '16px', color: 'white', alignItems: 'center'
-    }}>
-      <Link to="/" style={{ color: 'white', textDecoration: 'none' }}>🏠 Trang chủ</Link>
-      <Link to="/create-post" style={{ color: 'white', textDecoration: 'none' }}>✏️ Tạo bài viết</Link>
-      <Link to="/myposts" style={{ color: 'white', textDecoration: 'none' }}>📝 Bài viết của tôi</Link>
-      <Link to="/users" style={{ color: 'white', textDecoration: 'none' }}>👥 Người dùng</Link>
-      <Link to="/search" style={{ color: 'white', textDecoration: 'none' }}>🔍 Tìm kiếm</Link>
-      <Link to="/chat" style={{ color: 'white', textDecoration: 'none' }}>💬 Chat</Link>
-      
-      {/* Notification Bell */}
-      <NotificationBell />
-      
-      {/* Search Users */}
-      <div style={{ flex: 1, maxWidth: 300, margin: '0 16px' }}>
+    <nav className={styles.navbar}>
+      {/* Brand/Logo */}
+      <Link to="/" className={styles.brand}>
+        🌟 MiniSocial
+      </Link>
+
+      {/* Desktop Navigation Links */}
+      <div className={styles.navLinks}>
+        <Link 
+          to="/" 
+          className={`${styles.navLink} ${isActiveLink('/') ? styles.active : ''}`}
+        >
+          🏠 Trang chủ
+        </Link>
+        <Link 
+          to="/create-post" 
+          className={`${styles.navLink} ${isActiveLink('/create-post') ? styles.active : ''}`}
+        >
+          ✏️ Tạo bài viết
+        </Link>
+        <Link 
+          to="/myposts" 
+          className={`${styles.navLink} ${isActiveLink('/myposts') ? styles.active : ''}`}
+        >
+          📝 Bài viết của tôi
+        </Link>
+        <Link 
+          to="/users" 
+          className={`${styles.navLink} ${isActiveLink('/users') ? styles.active : ''}`}
+        >
+          👥 Người dùng
+        </Link>
+        <Link 
+          to="/chat" 
+          className={`${styles.navLink} ${isActiveLink('/chat') ? styles.active : ''}`}
+        >
+          💬 Chat
+        </Link>
+      </div>
+
+      {/* Mobile Menu Toggle */}
+      <button 
+        className={styles.mobileMenuToggle}
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+      >
+        ☰
+      </button>
+
+      {/* Search Section */}
+      <div className={styles.searchSection}>
         <SearchUsers />
       </div>
       
-      {currentUser && (
-        <Link to={`/profile/${currentUser.id}`} style={{ color: 'white', textDecoration: 'none' }}>
-          👤 Profile
-        </Link>
-      )}
-      <button onClick={handleLogout} style={{ marginLeft: 'auto' }}>🚪 Đăng xuất</button>
+      {/* User Section */}
+      <div className={styles.userSection}>
+        <NotificationBell />
+        
+        {currentUser && (
+          <Link 
+            to={`/profile/${currentUser.id}`} 
+            className={styles.profileLink}
+          >
+            👤 {currentUser.name}
+          </Link>
+        )}
+        
+        <button onClick={handleLogout} className={styles.logoutButton}>
+          🚪 Đăng xuất
+        </button>
+      </div>
+
+      {/* Mobile Menu */}
+      <div className={`${styles.mobileMenu} ${mobileMenuOpen ? styles.open : ''}`}>
+        <Link to="/" className={styles.mobileNavLink}>🏠 Trang chủ</Link>
+        <Link to="/create-post" className={styles.mobileNavLink}>✏️ Tạo bài viết</Link>
+        <Link to="/myposts" className={styles.mobileNavLink}>� Bài viết của tôi</Link>
+        <Link to="/users" className={styles.mobileNavLink}>👥 Người dùng</Link>
+        <Link to="/chat" className={styles.mobileNavLink}>💬 Chat</Link>
+      </div>
     </nav>
   );
 };

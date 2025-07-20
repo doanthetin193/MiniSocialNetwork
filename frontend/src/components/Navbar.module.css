@@ -1,0 +1,234 @@
+/* ===== NAVBAR CONTAINER ===== */
+.navbar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+}
+
+/* ===== BRAND/LOGO ===== */
+.brand {
+  color: white;
+  text-decoration: none;
+  font-size: 24px;
+  font-weight: 700;
+  margin-right: 20px;
+  transition: transform 0.2s ease;
+}
+
+.brand:hover {
+  transform: scale(1.05);
+  text-decoration: none;
+  color: white;
+}
+
+/* ===== NAVIGATION LINKS ===== */
+.navLinks {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex: 1;
+}
+
+.navLink {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.navLink:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.navLink.active {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+/* ===== SEARCH SECTION ===== */
+.searchSection {
+  flex: 1;
+  max-width: 350px;
+  margin: 0 20px;
+}
+
+/* ===== USER SECTION ===== */
+.userSection {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-left: auto;
+}
+
+.profileLink {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.profileLink:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.logoutButton {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.logoutButton:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* ===== MOBILE RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 10px 15px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .brand {
+    font-size: 20px;
+    margin-right: 10px;
+  }
+  
+  .navLinks {
+    display: none; /* Hide main nav on mobile */
+  }
+  
+  .searchSection {
+    flex: 1;
+    max-width: none;
+    margin: 0 10px;
+    order: 3;
+    width: 100%;
+  }
+  
+  .userSection {
+    margin-left: 0;
+  }
+  
+  .navLink, .profileLink {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  
+  .logoutButton {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar {
+    padding: 8px 10px;
+  }
+  
+  .brand {
+    font-size: 18px;
+  }
+  
+  .searchSection {
+    margin: 5px 0;
+  }
+  
+  .userSection {
+    gap: 8px;
+  }
+}
+
+/* ===== MOBILE MENU TOGGLE ===== */
+.mobileMenuToggle {
+  display: none;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.mobileMenuToggle:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+@media (max-width: 768px) {
+  .mobileMenuToggle {
+    display: block;
+  }
+}
+
+.mobileMenu {
+  display: none;
+  width: 100%;
+  margin-top: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 10px;
+  gap: 8px;
+  flex-direction: column;
+}
+
+.mobileMenu.open {
+  display: flex;
+}
+
+.mobileNavLink {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobileNavLink:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+  text-decoration: none;
+}

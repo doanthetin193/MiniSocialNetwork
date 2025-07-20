@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import styles from './HomePage.module.css';
 
 const HomePage = () => {
   const [posts, setPosts] = useState([]);
@@ -8,20 +9,25 @@ const HomePage = () => {
   const [comments, setComments] = useState({});
   const [newComment, setNewComment] = useState({});
   const [likedPosts, setLikedPosts] = useState(new Set()); // Track liked posts
+  const [friends, setFriends] = useState([]);
+  const [suggestedUsers, setSuggestedUsers] = useState([]);
+  const [followingSet, setFollowingSet] = useState(new Set());
+  const [userStats, setUserStats] = useState({ posts: 0, following: 0, followers: 0 });
   const navigate = useNavigate();
 
   const token = localStorage.getItem('token');
 
   useEffect(() => {
-    const fetchPosts = async () => {
+    const fetchData = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/posts');
-        setPosts(res.data);
+        // Fetch posts
+        const postsRes = await axios.get('http://localhost:5000/api/posts');
+        setPosts(postsRes.data);
 
-        // Nếu đã đăng nhập, lấy trạng thái like của từng post
         if (token) {
+          // Fetch like status for posts
           const likedSet = new Set();
-          for (const post of res.data) {
+          for (const post of postsRes.data) {
             try {
               const likeRes = await axios.get(`http://localhost:5000/api/posts/${post.id}/like-status`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -34,13 +40,51 @@ const HomePage = () => {
             }
           }
           setLikedPosts(likedSet);
+
+          // Fetch friends and following status
+          try {
+            const followingRes = await axios.get('http://localhost:5000/api/users/following', {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            setFriends(followingRes.data);
+            const followingIds = new Set(followingRes.data.map(user => user.id));
+            setFollowingSet(followingIds);
+          } catch (err) {
+            console.error('Error fetching following:', err);
+          }
+
+          // Fetch suggested users
+          try {
+            const usersRes = await axios.get('http://localhost:5000/api/users', {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            setSuggestedUsers(usersRes.data.slice(0, 5)); // Show only 5 suggestions
+          } catch (err) {
+            console.error('Error fetching users:', err);
+          }
+
+          // Fetch user stats
+          try {
+            const statsRes = await axios.get('http://localhost:5000/api/users/stats', {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            setUserStats(statsRes.data);
+          } catch (err) {
+            console.error('Error fetching stats:', err);
+            // Set default stats if API doesn't exist
+            setUserStats({ 
+              posts: postsRes.data.filter(p => p.user_id === JSON.parse(atob(token.split('.')[1])).userId).length, 
+              following: 0, 
+              followers: 0 
+            });
+          }
         }
       } catch (err) {
-        console.error('Error fetching posts:', err);
+        console.error('Error fetching data:', err);
       }
     };
 
-    fetchPosts();
+    fetchData();
   }, [token]);
 
   const toggleComments = async (postId) => {
@@ -110,84 +154,211 @@ const HomePage = () => {
     }
   };
 
+  // Hàm xử lý follow/unfollow
+  const handleFollowToggle = async (userId) => {
+    if (!token) return alert('Bạn cần đăng nhập để theo dõi');
+
+    try {
+      const res = await axios.post(`http://localhost:5000/api/users/${userId}/follow`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const newFollowingSet = new Set(followingSet);
+      if (res.data.following) {
+        newFollowingSet.add(userId);
+        // Add to friends list if not already there
+        const userToAdd = suggestedUsers.find(u => u.id === userId);
+        if (userToAdd && !friends.find(f => f.id === userId)) {
+          setFriends([...friends, userToAdd]);
+        }
+      } else {
+        newFollowingSet.delete(userId);
+        // Remove from friends list
+        setFriends(friends.filter(f => f.id !== userId));
+      }
+      setFollowingSet(newFollowingSet);
+
+    } catch (err) {
+      console.error('Error toggling follow:', err);
+      alert('Lỗi khi theo dõi người dùng');
+    }
+  };
+
   return (
-    <div style={{ maxWidth: 600, margin: 'auto' }}>
-      <h2>Tất cả bài viết</h2>
-      <Link to="/myposts">Xem bài viết của tôi</Link>
+    <div className={styles.container}>
+      {/* Main Content */}
+      <div className={styles.mainContent}>
+        <div className={styles.header}>
+          <h2 className={styles.title}>Trang chủ</h2>
+          <div className={styles.navigation}>
+            <Link to="/myposts" className={styles.myPostsLink}>📝 Bài viết của tôi</Link>
+          </div>
+          <button onClick={() => navigate('/create-post')} className={styles.createPostButton}>
+            ➕ Tạo bài viết mới
+          </button>
+        </div>
 
-      <button onClick={() => navigate('/create-post')} style={{ marginBottom: 20 }}>
-        ➕ Tạo bài viết
-      </button>
+        {/* Posts */}
+        {posts.map((post) => (
+          <div key={post.id} className={styles.postCard}>
+            <div className={styles.postHeader}>
+              <div className={styles.userInfo}>
+                <Link to={`/profile/${post.user_id}`} className={styles.userName}>
+                  {post.name}
+                </Link>
+                <span className={styles.userEmail}>({post.email})</span>
+              </div>
+            </div>
+            
+            <div className={styles.postContent}>{post.content}</div>
+            
+            {post.image_url && (
+              <img src={post.image_url} alt="Post" className={styles.postImage} />
+            )}
+            
+            <div className={styles.postDate}>
+              {new Date(post.created_at).toLocaleString()}
+            </div>
 
-      {posts.map((post) => (
-        <div key={post.id} style={{ border: '1px solid #ccc', padding: 12, marginBottom: 16 }}>
-          <p>
-            <Link to={`/profile/${post.user_id}`} style={{ textDecoration: 'none', color: '#1da1f2', fontWeight: 'bold' }}>
-              {post.name}
-            </Link>
-            {' '}({post.email})
-          </p>
-          <p>{post.content}</p>
-          {post.image_url && <img src={post.image_url} alt="Post" style={{ maxWidth: '100%' }} />}
-          <p style={{ fontSize: 12, color: 'gray' }}>{new Date(post.created_at).toLocaleString()}</p>
+            {/* Like Button và số lượt like */}
+            <div className={styles.interactionBar}>
+              <button 
+                onClick={() => handleLikeToggle(post.id)}
+                className={`${styles.likeButton} ${likedPosts.has(post.id) ? styles.liked : styles.notLiked}`}
+              >
+                {likedPosts.has(post.id) ? '❤️' : '🤍'} {post.likes_count || 0}
+              </button>
 
-          {/* Like Button và số lượt like */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: 10 }}>
-            <button 
-              onClick={() => handleLikeToggle(post.id)}
-              style={{ 
-                backgroundColor: likedPosts.has(post.id) ? '#ff4757' : '#f1f2f6',
-                color: likedPosts.has(post.id) ? 'white' : '#2f3640',
-                border: 'none',
-                padding: '6px 12px',
-                borderRadius: '20px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            >
-              {likedPosts.has(post.id) ? '❤️' : '🤍'} {post.likes_count || 0}
-            </button>
+              <button 
+                onClick={() => toggleComments(post.id)} 
+                className={styles.commentButton}
+              >
+                💬 {expandedPostId === post.id ? 'Ẩn bình luận' : 'Xem bình luận'}
+              </button>
+            </div>
 
-            <button onClick={() => toggleComments(post.id)} style={{ 
-              backgroundColor: '#f1f2f6',
-              border: 'none',
-              padding: '6px 12px',
-              borderRadius: '20px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}>
-              💬 {expandedPostId === post.id ? 'Ẩn bình luận' : 'Xem bình luận'}
-            </button>
+            {expandedPostId === post.id && (
+              <div className={styles.commentsSection}>
+                <h4 className={styles.commentsTitle}>Bình luận</h4>
+                {comments[post.id]?.map((cmt) => (
+                  <div key={cmt.id} className={styles.commentItem}>
+                    <span className={styles.commentAuthor}>{cmt.name}:</span>
+                    <span className={styles.commentContent}>{cmt.content}</span>
+                  </div>
+                ))}
+
+                {token && (
+                  <div className={styles.commentInputSection}>
+                    <input
+                      value={newComment[post.id] || ''}
+                      onChange={(e) =>
+                        setNewComment((prev) => ({ ...prev, [post.id]: e.target.value }))
+                      }
+                      placeholder="Nhập bình luận..."
+                      className={styles.commentInput}
+                    />
+                    <button 
+                      onClick={() => handleCommentSubmit(post.id)} 
+                      className={styles.commentSubmitButton}
+                    >
+                      Gửi
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Sidebar */}
+      {token && (
+        <div className={styles.sidebar}>
+          {/* User Stats */}
+          <div className={styles.statsCard}>
+            <h3 className={styles.statsTitle}>Thống kê của bạn</h3>
+            <div className={styles.statsGrid}>
+              <div className={styles.statItem}>
+                <div className={styles.statNumber}>{userStats.posts}</div>
+                <div className={styles.statLabel}>Bài viết</div>
+              </div>
+              <div className={styles.statItem}>
+                <div className={styles.statNumber}>{userStats.following}</div>
+                <div className={styles.statLabel}>Đang theo dõi</div>
+              </div>
+              <div className={styles.statItem}>
+                <div className={styles.statNumber}>{userStats.followers}</div>
+                <div className={styles.statLabel}>Người theo dõi</div>
+              </div>
+              <div className={styles.statItem}>
+                <div className={styles.statNumber}>{posts.length}</div>
+                <div className={styles.statLabel}>Tổng bài viết</div>
+              </div>
+            </div>
           </div>
 
-          {expandedPostId === post.id && (
-            <div style={{ marginTop: 10 }}>
-              <h4>Bình luận</h4>
-              {comments[post.id]?.map((cmt) => (
-                <div key={cmt.id} style={{ borderTop: '1px solid #eee', padding: 4 }}>
-                  <strong>{cmt.name}</strong>: {cmt.content}
-                </div>
-              ))}
-
-              {token && (
-                <div style={{ marginTop: 10 }}>
-                  <input
-                    value={newComment[post.id] || ''}
-                    onChange={(e) =>
-                      setNewComment((prev) => ({ ...prev, [post.id]: e.target.value }))
-                    }
-                    placeholder="Nhập bình luận..."
-                    style={{ width: '100%', padding: 6 }}
-                  />
-                  <button onClick={() => handleCommentSubmit(post.id)} style={{ marginTop: 4 }}>
-                    Gửi
-                  </button>
+          {/* Friends List */}
+          {friends.length > 0 && (
+            <div className={styles.sidebarCard}>
+              <h3 className={styles.sidebarTitle}>👥 Bạn bè ({friends.length})</h3>
+              <ul className={styles.friendsList}>
+                {friends.slice(0, 8).map((friend) => (
+                  <li key={friend.id} className={styles.friendItem}>
+                    <div className={styles.friendAvatar}>
+                      {friend.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className={styles.friendInfo}>
+                      <div className={styles.friendName} title={friend.name}>
+                        {friend.name}
+                      </div>
+                      <div className={styles.friendEmail} title={friend.email}>
+                        {friend.email}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {friends.length > 8 && (
+                <div style={{ textAlign: 'center', marginTop: '15px' }}>
+                  <Link to="/friends" style={{ color: '#667eea', fontSize: '14px' }}>
+                    Xem tất cả bạn bè
+                  </Link>
                 </div>
               )}
             </div>
           )}
+
+          {/* Suggested Users */}
+          {suggestedUsers.length > 0 && (
+            <div className={styles.sidebarCard}>
+              <h3 className={styles.sidebarTitle}>✨ Gợi ý kết bạn</h3>
+              <ul className={styles.friendsList}>
+                {suggestedUsers.map((user) => (
+                  <li key={user.id} className={styles.friendItem}>
+                    <div className={styles.friendAvatar}>
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className={styles.friendInfo}>
+                      <div className={styles.friendName} title={user.name}>
+                        {user.name}
+                      </div>
+                      <div className={styles.friendEmail} title={user.email}>
+                        {user.email}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleFollowToggle(user.id)}
+                      className={`${styles.followButton} ${followingSet.has(user.id) ? styles.following : ''}`}
+                    >
+                      {followingSet.has(user.id) ? 'Đang theo dõi' : 'Theo dõi'}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
-      ))}
+      )}
     </div>
   );
 };
