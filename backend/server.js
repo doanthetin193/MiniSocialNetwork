@@ -12,6 +12,7 @@ const chatRoutes = require('./routes/chatRoutes');
 const userRoutes = require('./routes/userRoutes');
 const likeRoutes = require('./routes/likeRoutes');
 const followRoutes = require('./routes/followRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 
 const app = express();
@@ -37,6 +38,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/posts', likeRoutes);
 app.use('/api/users', followRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 const PORT = process.env.PORT || 5000;
 
@@ -47,46 +49,140 @@ server.listen(PORT, () => {
 
 const db = require('./db');
 
+// ✅ Export io để các controller khác có thể dùng
+module.exports = { io, onlineUsers: null };
+
 const onlineUsers = new Map(); // userId => socketId
+
+// ✅ Cập nhật export để các controller có thể truy cập
+module.exports.onlineUsers = onlineUsers;
 
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
+  
+  let registeredUserId = null; // Track user for this socket
 
   // Khi user login, gửi userId lên để định danh
   socket.on('register', (userId) => {
-    onlineUsers.set(userId, socket.id);
-    console.log(`User ${userId} online`);
+    const userIdInt = parseInt(userId);
+    
+    // Avoid duplicate registration
+    if (registeredUserId === userIdInt) {
+      console.log(`User ${userIdInt} already registered for this socket`);
+      return;
+    }
+    
+    // Remove old socket if user is already online from another connection
+    if (onlineUsers.has(userIdInt)) {
+      console.log(`User ${userIdInt} switching connections`);
+    }
+    
+    onlineUsers.set(userIdInt, socket.id);
+    registeredUserId = userIdInt;
+    console.log(`✅ User ${userIdInt} registered online (Socket: ${socket.id})`);
+    
+    // Broadcast online status to all clients
+    socket.broadcast.emit('user_online', { userId: userIdInt, online: true });
+  });
+
+  // Typing indicator
+  socket.on('typing', ({ senderId, receiverId }) => {
+    const receiverSocketId = onlineUsers.get(parseInt(receiverId));
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit('user_typing', { senderId });
+    }
+  });
+
+  socket.on('stop_typing', ({ senderId, receiverId }) => {
+    const receiverSocketId = onlineUsers.get(parseInt(receiverId));
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit('user_stop_typing', { senderId });
+    }
   });
 
   // Gửi tin nhắn
   socket.on('private_message', async ({ senderId, receiverId, content }) => {
     try {
       // Lưu vào DB
-      await db.query(
+      const [result] = await db.query(
         'INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)',
         [senderId, receiverId, content]
       );
 
-      const receiverSocketId = onlineUsers.get(receiverId);
+      // Lấy thông tin user names
+      const [senderInfo] = await db.query('SELECT name FROM users WHERE id = ?', [senderId]);
+      const [receiverInfo] = await db.query('SELECT name FROM users WHERE id = ?', [receiverId]);
+
+      const messageData = {
+        id: result.insertId,
+        senderId: parseInt(senderId),
+        receiverId: parseInt(receiverId),
+        content,
+        createdAt: new Date(),
+        sender_name: senderInfo[0]?.name,
+        receiver_name: receiverInfo[0]?.name
+      };
+
+      // Tạo notification cho người nhận tin nhắn
+      const { createNotification } = require('./controllers/notificationController');
+      const senderName = senderInfo[0]?.name || 'Someone';
+      const shortContent = content.length > 30 ? content.substring(0, 30) + '...' : content;
+      
+      await createNotification(
+        receiverId,                            // user_id (người nhận)
+        'message',                             // type
+        'Tin nhắn mới',                        // title
+        `${senderName} đã gửi: "${shortContent}"`,  // message
+        senderId,                              // related_user_id
+        null                                   // related_post_id
+      );
+
+      // 🔥 Gửi real-time notification cho người nhận
       if (receiverSocketId) {
-        io.to(receiverSocketId).emit('receive_message', {
-          senderId,
-          content,
-          createdAt: new Date()
+        io.to(receiverSocketId).emit('new_notification', {
+          type: 'message',
+          title: 'Tin nhắn mới',
+          message: `${senderName} đã gửi: "${shortContent}"`,
+          created_at: new Date(),
+          related_user_id: senderId,
+          related_user_name: senderName,
+          is_read: false
         });
       }
+
+      // Gửi cho receiver
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit('receive_message', messageData);
+      }
+
+      // Gửi lại cho sender để confirm (nếu sender khác socket hiện tại)
+      socket.emit('message_sent', messageData);
+
     } catch (err) {
       console.error('Send message error:', err);
+      socket.emit('message_error', { error: 'Failed to send message' });
     }
+  });
+
+  // Check online status
+  socket.on('check_online', (userIds) => {
+    const onlineStatus = {};
+    userIds.forEach(userId => {
+      onlineStatus[userId] = onlineUsers.has(parseInt(userId));
+    });
+    socket.emit('online_status', onlineStatus);
   });
 
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
-    for (let [userId, sockId] of onlineUsers) {
-      if (sockId === socket.id) {
-        onlineUsers.delete(userId);
-        break;
-      }
+    
+    // Remove user from online list if this was their socket
+    if (registeredUserId && onlineUsers.get(registeredUserId) === socket.id) {
+      onlineUsers.delete(registeredUserId);
+      console.log(`❌ User ${registeredUserId} went offline`);
+      
+      // Broadcast offline status
+      socket.broadcast.emit('user_online', { userId: registeredUserId, online: false });
     }
   });
 });

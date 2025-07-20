@@ -5,6 +5,7 @@ CREATE DATABASE IF NOT EXISTS mini_social_app DEFAULT CHARACTER SET utf8mb4 COLL
 USE mini_social_app;
 
 -- 3. Xoá bảng nếu tồn tại để reset
+DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS post_likes;
 DROP TABLE IF EXISTS follows;
 DROP TABLE IF EXISTS messages;
@@ -75,4 +76,23 @@ CREATE TABLE follows (
     FOREIGN KEY (following_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE KEY unique_follow (follower_id, following_id),
     CHECK (follower_id != following_id)
+);
+
+-- 10. Bảng thông báo
+CREATE TABLE notifications (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,                    -- Người nhận thông báo
+    type ENUM('like', 'comment', 'follow', 'message') NOT NULL,
+    title VARCHAR(255) NOT NULL,             -- Tiêu đề ngắn gọn
+    message TEXT NOT NULL,                   -- Nội dung chi tiết
+    related_user_id INT,                     -- User liên quan (ai đã like/follow)
+    related_post_id INT,                     -- Post liên quan (nếu có)
+    is_read BOOLEAN DEFAULT FALSE,           -- Đã đọc chưa
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (related_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (related_post_id) REFERENCES posts(id) ON DELETE CASCADE,
+    
+    INDEX idx_user_notifications (user_id, is_read, created_at DESC)
 );

@@ -1,4 +1,5 @@
 const db = require('../db');
+const { createNotification } = require('./notificationController');
 
 // Follow hoặc Unfollow user
 const toggleFollow = async (req, res) => {
@@ -34,6 +35,39 @@ const toggleFollow = async (req, res) => {
         'INSERT INTO follows (follower_id, following_id) VALUES (?, ?)',
         [currentUserId, targetUserId]
       );
+
+      // Tạo notification cho người được follow
+      const [followerInfo] = await db.query('SELECT name FROM users WHERE id = ?', [currentUserId]);
+      const followerName = followerInfo[0]?.name || 'Someone';
+      
+      await createNotification(
+        targetUserId,                          // user_id (người nhận)
+        'follow',                              // type
+        'Follower mới',                        // title
+        `${followerName} đã theo dõi bạn`,     // message
+        currentUserId,                         // related_user_id
+        null                                   // related_post_id
+      );
+
+      // ✅ Gửi real-time notification
+      try {
+        const { io, onlineUsers } = require('../server');
+        const userSocketId = onlineUsers?.get(targetUserId);
+        if (userSocketId && io) {
+          io.to(userSocketId).emit('new_notification', {
+            type: 'follow',
+            title: 'Follower mới',
+            message: `${followerName} đã theo dõi bạn`,
+            created_at: new Date(),
+            related_user_id: currentUserId,
+            related_user_name: followerName,
+            related_post_id: null,
+            is_read: false
+          });
+        }
+      } catch (err) {
+        console.error('Error sending realtime follow notification:', err);
+      }
       
       res.json({ 
         message: 'Followed successfully',

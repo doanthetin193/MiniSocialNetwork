@@ -15,6 +15,8 @@ import Navbar from './components/Navbar';
 import ChatPage from './pages/ChatPage';
 import UsersListPage from './pages/UsersListPage';
 import ProfilePage from './pages/ProfilePage';
+import SearchPage from './pages/SearchPage';
+import NotificationPage from './pages/NotificationPage';
 
 const AppContent = () => {
   const location = useLocation();
@@ -30,7 +32,9 @@ const AppContent = () => {
         <Route path="/create-post" element={<CreatePostPage />} />
         <Route path="/myposts" element={<MyPostsPage />} />
         <Route path="/chat" element={<ChatPage />} />
+        <Route path="/notifications" element={<NotificationPage />} />
         <Route path="/users" element={<UsersListPage />} />
+        <Route path="/search" element={<SearchPage />} />
         <Route path="/profile/:userId" element={<ProfilePage />} />
       </Routes>
     </>

@@ -1,5 +1,18 @@
 const db = require('../db');
 
+// ✅ Helper function để gửi notification real-time
+const sendRealtimeNotification = (userId, notification) => {
+  try {
+    const { io, onlineUsers } = require('../server');
+    const userSocketId = onlineUsers?.get(parseInt(userId));
+    if (userSocketId && io) {
+      io.to(userSocketId).emit('new_notification', notification);
+    }
+  } catch (err) {
+    console.error('Error sending realtime notification:', err);
+  }
+};
+
 const createPost = async (req, res) => {
   const { content, image_url } = req.body;
   const userId = req.user.id;

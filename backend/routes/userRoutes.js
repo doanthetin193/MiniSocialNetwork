@@ -16,4 +16,26 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
+// Tìm kiếm người dùng
+router.get('/search', authMiddleware, async (req, res) => {
+  try {
+    const { q } = req.query; // query parameter
+    
+    if (!q || q.trim().length === 0) {
+      return res.json([]);
+    }
+    
+    const searchTerm = `%${q.trim()}%`;
+    const [users] = await db.query(
+      'SELECT id, name, email FROM users WHERE name LIKE ? OR email LIKE ? ORDER BY name LIMIT 20',
+      [searchTerm, searchTerm]
+    );
+    
+    res.json(users);
+  } catch (err) {
+    console.error('Lỗi tìm kiếm users:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;
