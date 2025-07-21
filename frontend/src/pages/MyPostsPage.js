@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
+import styles from './MyPostsPage.module.css';
 
 const MyPostsPage = () => {
   const [posts, setPosts] = useState([]);
@@ -7,9 +9,12 @@ const MyPostsPage = () => {
   const [editContent, setEditContent] = useState('');
   const [editImage, setEditImage] = useState(null);
   const [likedPosts, setLikedPosts] = useState(new Set());
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const fetchMyPosts = async () => {
+      setIsLoading(true);
       try {
         const token = localStorage.getItem('token');
         const res = await axios.get('http://localhost:5000/api/posts/mine', {
@@ -44,7 +49,9 @@ const MyPostsPage = () => {
         setLikedPosts(likedSet);
 
       } catch (err) {
-        console.error('Error fetching my posts:', err);
+        // ...existing code...
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -65,7 +72,7 @@ const MyPostsPage = () => {
       setPosts(posts.filter(post => post.id !== postId));
       alert('Xóa bài viết thành công!');
     } catch (err) {
-      console.error('Error deleting post:', err);
+      // ...existing code...
       alert('Lỗi khi xóa bài viết!');
     }
   };
@@ -86,6 +93,7 @@ const MyPostsPage = () => {
 
   // Hàm lưu chỉnh sửa
   const handleEditSave = async (postId) => {
+    setIsSaving(true);
     try {
       let imageUrl = '';
 
@@ -120,8 +128,10 @@ const MyPostsPage = () => {
       handleEditCancel();
       alert('Cập nhật bài viết thành công!');
     } catch (err) {
-      console.error('Error updating post:', err);
+      // ...existing code...
       alert('Lỗi khi cập nhật bài viết!');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -155,119 +165,136 @@ const MyPostsPage = () => {
       ));
 
     } catch (err) {
-      console.error('Error toggling like:', err);
+      // ...existing code...
       alert('Lỗi khi thích bài viết');
     }
   };
 
   return (
-    <div style={{ maxWidth: 600, margin: 'auto' }}>
-      <h2>Bài viết của tôi</h2>
-      {posts.map((post) => (
-        <div key={post.id} style={{ border: '1px solid #ccc', padding: 12, marginBottom: 16 }}>
+    <div className={styles.container}>
+      {/* Header */}
+      <div className={styles.header}>
+        <h1 className={styles.title}>📝 Bài viết của tôi</h1>
+        <p className={styles.subtitle}>Quản lý và chỉnh sửa các bài viết của bạn</p>
+        {!isLoading && (
+          <div className={styles.postsCount}>
+            {posts.length} bài viết
+          </div>
+        )}
+      </div>
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className={styles.loading}>
+          <div className={styles.spinner}></div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!isLoading && posts.length === 0 && (
+        <div className={styles.emptyState}>
+          <div className={styles.emptyIcon}>📝</div>
+          <h3 className={styles.emptyTitle}>Chưa có bài viết nào</h3>
+          <p className={styles.emptyText}>
+            Bạn chưa đăng bài viết nào. Hãy tạo bài viết đầu tiên để chia sẻ với mọi người!
+          </p>
+          <Link to="/create-post" className={styles.createFirstPostButton}>
+            ✏️ Tạo bài viết đầu tiên
+          </Link>
+        </div>
+      )}
+
+      {/* Posts List */}
+      {!isLoading && posts.map((post) => (
+        <div 
+          key={post.id} 
+          className={`${styles.postCard} ${editingPost === post.id ? styles.editing : ''}`}
+        >
           {editingPost === post.id ? (
             // Form chỉnh sửa
-            <div>
+            <div className={styles.editForm}>
               <textarea
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
-                rows={4}
-                style={{ width: '100%', marginBottom: 10 }}
+                className={styles.editTextarea}
                 placeholder="Nội dung bài viết..."
+                rows={4}
               />
-              <input
-                type="file"
-                onChange={(e) => setEditImage(e.target.files[0])}
-                accept="image/*"
-                style={{ marginBottom: 10 }}
-              />
-              <div>
+              
+              <div className={styles.fileInput}>
+                <label className={styles.fileInputLabel}>
+                  <input
+                    type="file"
+                    onChange={(e) => setEditImage(e.target.files[0])}
+                    accept="image/*"
+                    className={styles.fileInputHidden}
+                  />
+                  <span className={styles.fileInputText}>
+                    📷 {editImage ? editImage.name : 'Chọn ảnh mới (tùy chọn)'}
+                  </span>
+                </label>
+              </div>
+
+              <div className={styles.editActions}>
                 <button 
                   onClick={() => handleEditSave(post.id)}
-                  style={{ 
-                    marginRight: 10, 
-                    backgroundColor: '#4CAF50', 
-                    color: 'white', 
-                    border: 'none', 
-                    padding: '8px 16px', 
-                    cursor: 'pointer',
-                    borderRadius: '4px'
-                  }}
+                  className={styles.saveButton}
+                  disabled={isSaving}
                 >
-                  💾 Lưu
+                  {isSaving ? '⏳ Đang lưu...' : '💾 Lưu thay đổi'}
                 </button>
                 <button 
                   onClick={handleEditCancel}
-                  style={{ 
-                    backgroundColor: '#f44336', 
-                    color: 'white', 
-                    border: 'none', 
-                    padding: '8px 16px', 
-                    cursor: 'pointer',
-                    borderRadius: '4px'
-                  }}
+                  className={styles.cancelButton}
+                  disabled={isSaving}
                 >
-                  ❌ Hủy
+                  ❌ Hủy bỏ
                 </button>
               </div>
             </div>
           ) : (
             // Hiển thị bài viết bình thường
-            <div>
-              <p>{post.content}</p>
-              {post.image_url && <img src={post.image_url} alt="Post" style={{ maxWidth: '100%' }} />}
-              <p style={{ fontSize: 12, color: 'gray' }}>{new Date(post.created_at).toLocaleString()}</p>
+            <>
+              <div className={styles.postContent}>{post.content}</div>
               
-              {/* Like Button */}
-              <div style={{ marginTop: 10, marginBottom: 10 }}>
-                <button 
-                  onClick={() => handleLikeToggle(post.id)}
-                  style={{ 
-                    backgroundColor: likedPosts.has(post.id) ? '#ff4757' : '#f1f2f6',
-                    color: likedPosts.has(post.id) ? 'white' : '#2f3640',
-                    border: 'none',
-                    padding: '6px 12px',
-                    borderRadius: '20px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    marginRight: '10px'
-                  }}
-                >
-                  {likedPosts.has(post.id) ? '❤️' : '🤍'} {post.likes_count || 0}
-                </button>
+              {post.image_url && (
+                <img 
+                  src={post.image_url} 
+                  alt="Post" 
+                  className={styles.postImage}
+                />
+              )}
+              
+              <div className={styles.postDate}>
+                🕒 {new Date(post.created_at).toLocaleString('vi-VN')}
               </div>
 
-              {/* Buttons Sửa và Xóa */}
-              <div style={{ marginTop: 10 }}>
-                <button 
-                  onClick={() => handleEditStart(post)}
-                  style={{ 
-                    marginRight: 10, 
-                    backgroundColor: '#2196F3', 
-                    color: 'white', 
-                    border: 'none', 
-                    padding: '6px 12px', 
-                    cursor: 'pointer',
-                    borderRadius: '4px'
-                  }}
-                >
-                  ✏️ Sửa
-                </button>
-                <button 
-                  onClick={() => handleDeletePost(post.id)}
-                  style={{ 
-                    backgroundColor: '#f44336', 
-                    color: 'white', 
-                    border: 'none', 
-                    padding: '6px 12px', 
-                    cursor: 'pointer',
-                    borderRadius: '4px'
-                  }}
-                >
-                  🗑️ Xóa
-                </button>
+              <div className={styles.interactionBar}>
+                <div className={styles.likeSection}>
+                  <button 
+                    onClick={() => handleLikeToggle(post.id)}
+                    className={`${styles.likeButton} ${likedPosts.has(post.id) ? styles.liked : styles.notLiked}`}
+                  >
+                    {likedPosts.has(post.id) ? '❤️' : '🤍'} {post.likes_count || 0} lượt thích
+                  </button>
+                </div>
+
+                <div className={styles.actions}>
+                  <button 
+                    onClick={() => handleEditStart(post)}
+                    className={styles.editButton}
+                  >
+                    ✏️ Chỉnh sửa
+                  </button>
+                  <button 
+                    onClick={() => handleDeletePost(post.id)}
+                    className={styles.deleteButton}
+                  >
+                    🗑️ Xóa bài
+                  </button>
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
       ))}

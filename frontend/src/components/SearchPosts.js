@@ -26,7 +26,7 @@ const SearchPosts = () => {
         const res = await axios.get(`http://localhost:5000/api/posts/search?${params.toString()}`);
         setPosts(res.data);
       } catch (err) {
-        console.error('Error searching posts:', err);
+        // ...existing code...
         setPosts([]);
       } finally {
         setLoading(false);

@@ -17,15 +17,17 @@ import UsersListPage from './pages/UsersListPage';
 import ProfilePage from './pages/ProfilePage';
 import SearchPage from './pages/SearchPage';
 import NotificationPage from './pages/NotificationPage';
+import WelcomePage from './pages/WelcomePage';
 
 const AppContent = () => {
   const location = useLocation();
-  const hideNavbar = location.pathname === '/login' || location.pathname === '/register';
+  const hideNavbar = location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/welcome';
 
   return (
     <>
       {!hideNavbar && <Navbar />}
       <Routes>
+        <Route path="/welcome" element={<WelcomePage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<HomePage />} />

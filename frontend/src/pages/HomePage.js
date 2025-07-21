@@ -41,7 +41,9 @@ const HomePage = () => {
           }
           setLikedPosts(likedSet);
 
-          // Fetch friends and following status
+          // Fetch friends and following status - TEMPORARILY DISABLED
+          // TODO: Enable when backend endpoints are available
+          /*
           try {
             const followingRes = await axios.get('http://localhost:5000/api/users/following', {
               headers: { Authorization: `Bearer ${token}` }
@@ -52,6 +54,7 @@ const HomePage = () => {
           } catch (err) {
             console.error('Error fetching following:', err);
           }
+          */
 
           // Fetch suggested users
           try {
@@ -63,7 +66,9 @@ const HomePage = () => {
             console.error('Error fetching users:', err);
           }
 
-          // Fetch user stats
+          // Fetch user stats - TEMPORARILY DISABLED
+          // TODO: Enable when backend endpoint is available  
+          /*
           try {
             const statsRes = await axios.get('http://localhost:5000/api/users/stats', {
               headers: { Authorization: `Bearer ${token}` }
@@ -78,6 +83,14 @@ const HomePage = () => {
               followers: 0 
             });
           }
+          */
+          
+          // Set default stats since backend endpoint not available
+          setUserStats({ 
+            posts: postsRes.data.filter(p => p.user_id === JSON.parse(atob(token.split('.')[1])).userId).length, 
+            following: 0, 
+            followers: 0 
+          });
         }
       } catch (err) {
         console.error('Error fetching data:', err);

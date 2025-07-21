@@ -66,7 +66,7 @@ const toggleFollow = async (req, res) => {
           });
         }
       } catch (err) {
-        console.error('Error sending realtime follow notification:', err);
+        // ...existing code...
       }
       
       res.json({ 
@@ -75,7 +75,7 @@ const toggleFollow = async (req, res) => {
       });
     }
   } catch (err) {
-    console.error('Toggle follow error:', err);
+    // ...existing code...
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -96,7 +96,7 @@ const getFollowers = async (req, res) => {
 
     res.json(followers);
   } catch (err) {
-    console.error('Get followers error:', err);
+    // ...existing code...
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -117,7 +117,7 @@ const getFollowing = async (req, res) => {
 
     res.json(following);
   } catch (err) {
-    console.error('Get following error:', err);
+    // ...existing code...
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -152,7 +152,7 @@ const getFollowStatus = async (req, res) => {
       is_following: isFollowing.length > 0
     });
   } catch (err) {
-    console.error('Get follow status error:', err);
+    // ...existing code...
     res.status(500).json({ message: 'Server error' });
   }
 };

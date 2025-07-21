@@ -43,7 +43,7 @@ app.use('/api/notifications', notificationRoutes);
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  // ...existing code...
 });
 
 
@@ -58,7 +58,7 @@ const onlineUsers = new Map(); // userId => socketId
 module.exports.onlineUsers = onlineUsers;
 
 io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
+  // ...existing code...
   
   let registeredUserId = null; // Track user for this socket
 
@@ -68,18 +68,18 @@ io.on('connection', (socket) => {
     
     // Avoid duplicate registration
     if (registeredUserId === userIdInt) {
-      console.log(`User ${userIdInt} already registered for this socket`);
+      // ...existing code...
       return;
     }
     
     // Remove old socket if user is already online from another connection
     if (onlineUsers.has(userIdInt)) {
-      console.log(`User ${userIdInt} switching connections`);
+      // ...existing code...
     }
     
     onlineUsers.set(userIdInt, socket.id);
     registeredUserId = userIdInt;
-    console.log(`✅ User ${userIdInt} registered online (Socket: ${socket.id})`);
+    // ...existing code...
     
     // Broadcast online status to all clients
     socket.broadcast.emit('user_online', { userId: userIdInt, online: true });
@@ -112,6 +112,9 @@ io.on('connection', (socket) => {
       // Lấy thông tin user names
       const [senderInfo] = await db.query('SELECT name FROM users WHERE id = ?', [senderId]);
       const [receiverInfo] = await db.query('SELECT name FROM users WHERE id = ?', [receiverId]);
+
+      // Lấy socketId của receiver
+      const receiverSocketId = onlineUsers.get(parseInt(receiverId));
 
       const messageData = {
         id: result.insertId,
@@ -159,7 +162,7 @@ io.on('connection', (socket) => {
       socket.emit('message_sent', messageData);
 
     } catch (err) {
-      console.error('Send message error:', err);
+      // ...existing code...
       socket.emit('message_error', { error: 'Failed to send message' });
     }
   });
@@ -168,18 +171,19 @@ io.on('connection', (socket) => {
   socket.on('check_online', (userIds) => {
     const onlineStatus = {};
     userIds.forEach(userId => {
-      onlineStatus[userId] = onlineUsers.has(parseInt(userId));
+      const isOnline = onlineUsers.has(parseInt(userId));
+      onlineStatus[userId] = isOnline;
     });
     socket.emit('online_status', onlineStatus);
   });
 
   socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
+    // ...existing code...
     
     // Remove user from online list if this was their socket
     if (registeredUserId && onlineUsers.get(registeredUserId) === socket.id) {
       onlineUsers.delete(registeredUserId);
-      console.log(`❌ User ${registeredUserId} went offline`);
+      // ...existing code...
       
       // Broadcast offline status
       socket.broadcast.emit('user_online', { userId: registeredUserId, online: false });

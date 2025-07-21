@@ -57,7 +57,7 @@ const SearchUsers = () => {
         }
 
       } catch (err) {
-        console.error('Error searching users:', err);
+        // ...existing code...
       } finally {
         setLoading(false);
       }

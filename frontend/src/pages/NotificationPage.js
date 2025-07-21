@@ -29,7 +29,7 @@ const NotificationPage = () => {
       setHasMore(res.data.hasMore);
       setPage(pageNum);
     } catch (err) {
-      console.error('Error fetching notifications:', err);
+      // ...existing code...
     } finally {
       setLoading(false);
     }
@@ -47,7 +47,7 @@ const NotificationPage = () => {
         notif.id === notificationId ? { ...notif, is_read: true } : notif
       ));
     } catch (err) {
-      console.error('Error marking notification as read:', err);
+      // ...existing code...
     }
   };
 
@@ -61,7 +61,7 @@ const NotificationPage = () => {
       
       setNotifications(notifications.map(notif => ({ ...notif, is_read: true })));
     } catch (err) {
-      console.error('Error marking all notifications as read:', err);
+      // ...existing code...
     }
   };
 
@@ -77,7 +77,7 @@ const NotificationPage = () => {
       
       setNotifications(notifications.filter(notif => notif.id !== notificationId));
     } catch (err) {
-      console.error('Error deleting notification:', err);
+      // ...existing code...
       alert('Lỗi khi xóa thông báo');
     }
   };

@@ -11,7 +11,7 @@ router.get('/', authMiddleware, async (req, res) => {
     );
     res.json(users);
   } catch (err) {
-    console.error('Lỗi lấy danh sách users:', err);
+    // ...existing code...
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -33,7 +33,7 @@ router.get('/search', authMiddleware, async (req, res) => {
     
     res.json(users);
   } catch (err) {
-    console.error('Lỗi tìm kiếm users:', err);
+    // ...existing code...
     res.status(500).json({ message: 'Server error' });
   }
 });

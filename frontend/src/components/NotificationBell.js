@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { io } from 'socket.io-client';
 
 const NotificationBell = () => {
   const [notifications, setNotifications] = useState([]);
@@ -20,7 +19,7 @@ const NotificationBell = () => {
       });
       setUnreadCount(res.data.unread_count);
     } catch (err) {
-      console.error('Error fetching unread count:', err);
+      // ...existing code...
     }
   };
 
@@ -34,7 +33,7 @@ const NotificationBell = () => {
       });
       setNotifications(res.data.notifications);
     } catch (err) {
-      console.error('Error fetching notifications:', err);
+      // ...existing code...
     } finally {
       setLoading(false);
     }
@@ -56,7 +55,7 @@ const NotificationBell = () => {
       // Update unread count
       fetchUnreadCount();
     } catch (err) {
-      console.error('Error marking notification as read:', err);
+      // ...existing code...
     }
   };
 
@@ -72,7 +71,7 @@ const NotificationBell = () => {
       setNotifications(notifications.map(notif => ({ ...notif, is_read: true })));
       setUnreadCount(0);
     } catch (err) {
-      console.error('Error marking all notifications as read:', err);
+      // ...existing code...
     }
   };
 
@@ -118,31 +117,18 @@ const NotificationBell = () => {
   // Initial load và Socket.IO setup
   useEffect(() => {
     if (currentUser) {
+      // Chỉ fetch unread count, không tạo Socket.IO connection riêng
+      // để tránh xung đột với ChatPage socket
       fetchUnreadCount();
-
-      // ✅ Kết nối Socket.IO
-      const socket = io('http://localhost:5000');
       
-      // Đăng ký user với socket
-      socket.emit('register', currentUser.id);
-
-      // Lắng nghe notification mới
-      socket.on('new_notification', (notification) => {
-        console.log('🔔 Received new notification:', notification);
-        
-        // Cập nhật unread count
-        setUnreadCount(prev => prev + 1);
-        
-        // Nếu dropdown đang mở, thêm notification mới vào đầu danh sách
-        setNotifications(prev => [notification, ...prev].slice(0, 10)); // Chỉ giữ 10 notifications mới nhất
-        
-        // Có thể thêm toast notification ở đây
-      });
-
-      // Cleanup khi component unmount
-      return () => {
-        socket.disconnect();
-      };
+      // Có thể sử dụng polling nhẹ để cập nhật notifications
+      const interval = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+          fetchUnreadCount();
+        }
+      }, 30000); // Check mỗi 30 giây
+      
+      return () => clearInterval(interval);
     }
   }, [currentUser]);
 

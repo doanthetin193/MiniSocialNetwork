@@ -7,9 +7,9 @@ const createNotification = async (userId, type, title, message, relatedUserId = 
       'INSERT INTO notifications (user_id, type, title, message, related_user_id, related_post_id) VALUES (?, ?, ?, ?, ?, ?)',
       [userId, type, title, message, relatedUserId, relatedPostId]
     );
-    console.log(`✅ Notification created for user ${userId}: ${title}`);
+    // ...existing code...
   } catch (err) {
-    console.error('Error creating notification:', err);
+    // ...existing code...
   }
 };
 
@@ -48,7 +48,7 @@ const getNotifications = async (req, res) => {
       hasMore: (page * limit) < totalResult[0].total
     });
   } catch (err) {
-    console.error('Error fetching notifications:', err);
+    // ...existing code...
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -65,7 +65,7 @@ const getUnreadCount = async (req, res) => {
 
     res.json({ unread_count: result[0].unread_count });
   } catch (err) {
-    console.error('Error getting unread count:', err);
+    // ...existing code...
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -87,7 +87,7 @@ const markAsRead = async (req, res) => {
 
     res.json({ message: 'Notification marked as read' });
   } catch (err) {
-    console.error('Error marking notification as read:', err);
+    // ...existing code...
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -104,7 +104,7 @@ const markAllAsRead = async (req, res) => {
 
     res.json({ message: 'All notifications marked as read' });
   } catch (err) {
-    console.error('Error marking all notifications as read:', err);
+    // ...existing code...
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -126,7 +126,7 @@ const deleteNotification = async (req, res) => {
 
     res.json({ message: 'Notification deleted successfully' });
   } catch (err) {
-    console.error('Error deleting notification:', err);
+    // ...existing code...
     res.status(500).json({ message: 'Server error' });
   }
 };

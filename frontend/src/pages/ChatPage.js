@@ -1,65 +1,149 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import socket from '../socket';
+import React, { useState, useEffect, useRef } from 'react';
+import socket from '../socket'; // ENABLED FOR REAL-TIME CHAT
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import styles from './ChatPage.module.css';
 
 const ChatPage = () => {
   const currentUser = JSON.parse(localStorage.getItem('user'));
-  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [selectedUserId, _setSelectedUserId] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [content, setContent] = useState('');
   const [messages, setMessages] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [users, setUsers] = useState([]);
-  const [onlineUsers, setOnlineUsers] = useState({});
-  const [typing, setTyping] = useState({});
+  const [onlineUsers, setOnlineUsers] = useState({}); // Real-time online status
+  const [typing, setTyping] = useState({}); // Real-time typing indicators
   const [showUsersList, setShowUsersList] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null); // userId to delete
+  const [isRefreshing, setIsRefreshing] = useState(false); // Hiển thị trạng thái refresh
+  const [onlineStatusVersion, setOnlineStatusVersion] = useState(0); // Force re-render on online status change
+  // ...existing code...
   
   const messagesEndRef = useRef(null);
-  const typingTimeoutRef = useRef(null);
+  const typingTimeoutRef = useRef(null); // ENABLED FOR REAL-TIME
   const hasRegistered = useRef(false); // Prevent multiple registrations
+  const isInitialized = useRef(false); // Prevent multiple socket setups
 
-  // Auto scroll to bottom
+  // REF FOR LATEST SELECTED USER ID
+  const selectedUserIdRef = useRef(selectedUserId);
+  // Always sync ref with state
+  const setSelectedUserId = (id) => {
+    _setSelectedUserId(id);
+    selectedUserIdRef.current = id;
+  } 
+
+
+  // Auto scroll to bottom (robust)
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+    if (messagesEndRef.current) {
+      try {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      } catch (e) {
+        messagesEndRef.current.scrollIntoView();
+      }
+    }
+  } 
+
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  // Fetch initial data
+  // Fetch initial data - with proper initialization guard
+  const [hasInitialized, setHasInitialized] = useState(false);
+  
   useEffect(() => {
+    // Early return if already initialized or no user/token
+    if (hasInitialized || !currentUser || !localStorage.getItem('token')) {
+      return;
+    }
+    
     const fetchInitialData = async () => {
       try {
         const token = localStorage.getItem('token');
+        
+        if (!token) {
+          console.warn('No token found - user may need to login');
+          return;
+        }
+        
+        // Set initialized flag early to prevent duplicate calls
+        setHasInitialized(true);
         
         // Fetch conversations
         const conversationsRes = await axios.get('http://localhost:5000/api/chat/conversations', {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setConversations(conversationsRes.data);
+        const validConversations = (conversationsRes.data || []).filter(conv => 
+          conv && conv.other_user_id && conv.name
+        );
+        setConversations(validConversations);
         
         // Fetch all users
         const usersRes = await axios.get('http://localhost:5000/api/users', {
           headers: { Authorization: `Bearer ${token}` }
         });
-        const otherUsers = usersRes.data.filter(user => user.id !== currentUser?.id);
-        setUsers(otherUsers);
+        const validUsers = (usersRes.data || []).filter(user => 
+          user && user.id && user.name && user.id !== currentUser?.id
+        );
+        setUsers(validUsers);
         
       } catch (err) {
         console.error('Error fetching initial data:', err);
+        // Reset initialization flag on error to allow retry
+        setHasInitialized(false);
+        if (err.response?.status === 401) {
+          console.error('Unauthorized - token may be expired');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login';
+        }
       }
     };
 
-    if (currentUser) {
-      fetchInitialData();
-    }
-  }, [currentUser]);
+    fetchInitialData();
+  }, [currentUser, hasInitialized]);
 
-  // Fetch conversations with useCallback
-  const fetchConversations = useCallback(async () => {
+  // Cập nhật conversations khi có tin nhắn mới với debounce
+  const updateConversationsRef = useRef(null);
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      // Chỉ cập nhật conversations nếu tin nhắn cuối là mới (trong vòng 5 giây)
+      const messageTime = new Date(lastMessage.created_at);
+      const now = new Date();
+      if (now - messageTime < 5000) {
+        // Debounce để tránh gọi quá nhiều lần
+        if (updateConversationsRef.current) {
+          clearTimeout(updateConversationsRef.current);
+        }
+        updateConversationsRef.current = setTimeout(async () => {
+          try {
+            const token = localStorage.getItem('token');
+            const res = await axios.get('http://localhost:5000/api/chat/conversations', {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            setConversations(res.data);
+          } catch (err) {
+            console.error('Error fetching conversations:', err);
+          }
+        }, 500);
+      }
+    }
+    
+    return () => {
+      if (updateConversationsRef.current) {
+        clearTimeout(updateConversationsRef.current);
+      }
+    };
+  }, [messages]); // Depend vào messages nhưng không gọi fetchConversations trực tiếp
+
+  // Auto-refresh disabled - using real-time Socket.IO instead
+
+
+  // Hàm fetchConversations để cập nhật sidebar real-time
+  const fetchConversations = async () => {
     try {
       const token = localStorage.getItem('token');
       const res = await axios.get('http://localhost:5000/api/chat/conversations', {
@@ -67,138 +151,210 @@ const ChatPage = () => {
       });
       setConversations(res.data);
     } catch (err) {
-      console.error('Error fetching conversations:', err);
+      console.error('Error updating conversations:', err);
     }
-  }, []);
+  };
 
-  // Socket setup
+  // Socket setup - SINGLE CONNECTION FOR ENTIRE APP LIFECYCLE
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser?.id || !localStorage.getItem('token')) return;
+    if (isInitialized.current) return; // Already initialized
 
-    // Connect socket only once
-    if (!socket.connected) {
+    // ...existing code...
+    isInitialized.current = true;
+
+    // Only connect once globally
+    if (!socket.connected && !socket.connecting) {
+      // ...existing code...
       socket.connect();
     }
 
     // Register user only once
-    const handleConnect = () => {
-      if (!hasRegistered.current && currentUser?.id) {
-        console.log('Socket connected, registering user:', currentUser.id);
+    const registerUser = () => {
+      if (!hasRegistered.current && socket.connected) {
+        // ...existing code...
         socket.emit('register', currentUser.id);
         hasRegistered.current = true;
       }
     };
 
-    if (socket.connected) {
-      handleConnect();
-    } else {
-      socket.on('connect', handleConnect);
-    }
-    
-    // Check online status of all users
-    const allUserIds = users.map(u => u.id);
-    if (allUserIds.length > 0) {
-      socket.emit('check_online', allUserIds);
-    }
-
-    // Socket listeners
-    const handleReceiveMessage = (msg) => {
-      console.log('Received message:', msg, 'Current chat with:', selectedUserId);
-      
-      // Tạo message object đúng format
-      const newMessage = {
-        id: msg.id || Date.now(),
-        sender_id: msg.senderId,
-        receiver_id: msg.receiverId, 
-        content: msg.content,
-        created_at: msg.createdAt,
-        sender_name: msg.sender_name,
-        receiver_name: msg.receiver_name
-      };
-      
-      // Nếu đang chat với user gửi tin nhắn này, hiển thị ngay
-      if (selectedUserId && 
-          (msg.senderId === parseInt(selectedUserId) || msg.receiverId === parseInt(selectedUserId))) {
-        console.log('Adding message to current chat');
-        setMessages(prev => [...prev, newMessage]);
-      }
-      
-      // Luôn update conversations list
-      fetchConversations();
+    // Event handlers
+    const handleConnect = () => {
+      // ...existing code...
+      registerUser();
     };
 
-    const handleMessageSent = (msg) => {
-      console.log('Message sent successfully');
+    const handleDisconnect = () => {
+      // ...existing code...
+      hasRegistered.current = false;
+    };
+
+    // Khi nhận tin nhắn mới qua socket
+    const handleReceiveMessage = (msg) => {
+      // Cập nhật lại conversations và trạng thái online
+      fetchConversations();
+      socket.emit('check_online', [msg.senderId, msg.receiverId]);
+      // Nếu đang xem đúng cuộc trò chuyện thì cập nhật khung chat
+      const currentSelectedUserId = selectedUserIdRef.current ? Number(selectedUserIdRef.current) : null;
+      const isRelated = currentSelectedUserId && (
+        (Number(msg.senderId) === currentSelectedUserId && Number(msg.receiverId) === Number(currentUser?.id)) ||
+        (Number(msg.receiverId) === currentSelectedUserId && Number(msg.senderId) === Number(currentUser?.id))
+      );
+      if (isRelated) {
+        setMessages(prev => {
+          const exists = prev.some(m => m.id === msg.id);
+          if (!exists) {
+            const updated = [...prev, {
+              id: msg.id,
+              sender_id: msg.senderId,
+              receiver_id: msg.receiverId,
+              content: msg.content,
+              created_at: msg.createdAt || new Date(),
+              sender_name: msg.sender_name,
+              receiver_name: msg.receiver_name
+            }];
+            return updated;
+          }
+          return prev;
+        });
+      }
     };
 
     const handleUserOnline = ({ userId, online }) => {
-      setOnlineUsers(prev => ({
-        ...prev,
-        [userId]: online
-      }));
+      setOnlineUsers(prev => ({ ...prev, [userId]: online }));
+      setOnlineStatusVersion(v => v + 1); // Force re-render
     };
 
     const handleOnlineStatus = (status) => {
       setOnlineUsers(status);
+      setOnlineStatusVersion(v => v + 1);
     };
 
     const handleUserTyping = ({ senderId }) => {
-      setTyping(prev => ({
-        ...prev,
-        [senderId]: true
-      }));
-      
-      setTimeout(() => {
-        setTyping(prev => ({
-          ...prev,
-          [senderId]: false
-        }));
-      }, 3000);
+      setTyping(prev => ({ ...prev, [senderId]: true }));
+      setTimeout(() => setTyping(prev => ({ ...prev, [senderId]: false })), 3000);
     };
 
     const handleUserStopTyping = ({ senderId }) => {
-      setTyping(prev => ({
-        ...prev,
-        [senderId]: false
-      }));
+      setTyping(prev => ({ ...prev, [senderId]: false }));
     };
 
+    // If already connected, register immediately
+    if (socket.connected) {
+      registerUser();
+    }
+
+    // Register all event listeners
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
     socket.on('receive_message', handleReceiveMessage);
-    socket.on('message_sent', handleMessageSent);
     socket.on('user_online', handleUserOnline);
     socket.on('online_status', handleOnlineStatus);
     socket.on('user_typing', handleUserTyping);
     socket.on('user_stop_typing', handleUserStopTyping);
 
+    // Cleanup function
     return () => {
+      // ...existing code...
       socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
       socket.off('receive_message', handleReceiveMessage);
-      socket.off('message_sent', handleMessageSent);
       socket.off('user_online', handleUserOnline);
       socket.off('online_status', handleOnlineStatus);
       socket.off('user_typing', handleUserTyping);
       socket.off('user_stop_typing', handleUserStopTyping);
     };
-  }, [currentUser, users, selectedUserId, fetchConversations]);
+  }, [currentUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Check online status when users list changes or selected user changes
+  const checkOnlineTimeoutRef = useRef(null);
+  
+  useEffect(() => {
+    // Clear previous timeout
+    if (checkOnlineTimeoutRef.current) {
+      clearTimeout(checkOnlineTimeoutRef.current);
+    }
+    
+    // Debounce the online check to prevent loops
+    checkOnlineTimeoutRef.current = setTimeout(() => {
+      if (socket.connected && users.length > 0) {
+        const allUserIds = users.filter(u => u && u.id).map(u => u.id);
+        socket.emit('check_online', allUserIds);
+      }
+    }, 100);
+    
+    return () => {
+      if (checkOnlineTimeoutRef.current) {
+        clearTimeout(checkOnlineTimeoutRef.current);
+      }
+    };
+  }, [users]); // Only depend on users, not onlineUsers
+
+  // Check online status for selected user specifically
+  useEffect(() => {
+    if (socket.connected && selectedUserId) {
+      // Delay to avoid rapid fire requests
+      setTimeout(() => {
+        socket.emit('check_online', [selectedUserId]);
+      }, 100);
+    }
+  }, [selectedUserId]);
+
+  // ...existing code...
+
+  // Periodic online status check - but only if not already checking frequently
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (socket.connected && (users.length > 0 || selectedUserId)) {
+        const allUserIds = users.filter(u => u && u.id).map(u => u.id);
+        if (selectedUserId && !allUserIds.includes(selectedUserId)) {
+          allUserIds.push(selectedUserId);
+        }
+        if (allUserIds.length > 0) {
+          socket.emit('check_online', allUserIds);
+        }
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [users, selectedUserId]);
+
 
   const fetchChat = async (userId) => {
     try {
+      setIsRefreshing(true);
       const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No token found for fetchChat');
+        return;
+      }
       const res = await axios.get(`http://localhost:5000/api/chat/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setMessages(res.data);
+      const validMessages = (res.data || []).filter(msg => msg && msg.id);
+      setMessages(validMessages);
+      scrollToBottom();
     } catch (err) {
       console.error('Error fetching messages:', err);
+      if (err.response?.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
+
   const selectUser = (user) => {
-    setSelectedUserId(user.id);
+    setSelectedUserId(Number(user.id)); // Đảm bảo kiểu số
     setSelectedUser(user);
     setShowUsersList(false);
     setShowDeleteConfirm(null); // Close any delete confirm
-    fetchChat(user.id);
+    fetchChat(Number(user.id)); // Đảm bảo kiểu số
+    // Yêu cầu cập nhật trạng thái online ngay khi chọn user
+    socket.emit('check_online', [user.id]);
   };
 
   const deleteConversation = async (otherUserId) => {
@@ -209,7 +365,15 @@ const ChatPage = () => {
       });
 
       // Refresh conversations list
-      fetchConversations();
+      try {
+        const token = localStorage.getItem('token');
+        const res = await axios.get('http://localhost:5000/api/chat/conversations', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setConversations(res.data);
+      } catch (err) {
+        console.error('Error refreshing conversations:', err);
+      }
       
       // If deleting current conversation, clear chat
       if (selectedUserId === otherUserId) {
@@ -228,37 +392,41 @@ const ChatPage = () => {
 
   const sendMessage = () => {
     if (!content.trim() || !selectedUserId) return;
-    
-    socket.emit('private_message', {
-      senderId: currentUser.id,
-      receiverId: selectedUserId,
-      content: content.trim(),
-    });
-    
-    // Add to local messages immediately
-    const newMessage = {
-      id: Date.now(),
+    const messageContent = content.trim();
+    setContent('');
+    const tempId = `local_${Date.now()}_${Math.random()}`;
+    const tempMessage = {
+      id: tempId,
       sender_id: currentUser.id,
-      receiver_id: selectedUserId,
-      content: content.trim(),
+      receiver_id: parseInt(selectedUserId),
+      content: messageContent,
       created_at: new Date(),
       sender_name: currentUser.name,
       receiver_name: selectedUser.name
     };
-    
-    setMessages(prev => [...prev, newMessage]);
-    setContent('');
-    
-    // Stop typing indicator
+    setMessages(prev => {
+      const exists = prev.some(msg => msg.id === tempId);
+      if (exists) return prev;
+      return [...prev, tempMessage];
+    });
+    // Gửi tin nhắn qua Socket.IO
+    socket.emit('private_message', {
+      senderId: currentUser.id,
+      receiverId: parseInt(selectedUserId),
+      content: messageContent,
+    });
     socket.emit('stop_typing', {
       senderId: currentUser.id,
       receiverId: selectedUserId
     });
+    // Cập nhật lại conversations ngay
+    setTimeout(fetchConversations, 100);
   };
 
   const handleTyping = (e) => {
     setContent(e.target.value);
     
+    // Real-time typing indicators via Socket.IO
     if (selectedUserId && e.target.value.trim()) {
       socket.emit('typing', {
         senderId: currentUser.id,
@@ -315,7 +483,7 @@ const ChatPage = () => {
   // Group messages by date
   const groupMessagesByDate = (messages) => {
     const groups = {};
-    messages.forEach(msg => {
+    (messages || []).filter(msg => msg && msg.created_at).forEach(msg => {
       const date = new Date(msg.created_at).toDateString();
       if (!groups[date]) {
         groups[date] = [];
@@ -330,47 +498,55 @@ const ChatPage = () => {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
+      // Reset registration flag when component unmounts
       hasRegistered.current = false;
+    // ...existing code...
     };
   }, []);
 
+  // Khi onlineStatusVersion thay đổi, force re-render users/conversations
+  useEffect(() => {
+    setUsers(users => [...users]);
+    setConversations(convs => [...convs]);
+  }, [onlineStatusVersion]);
+
+  // Early return if no user logged in
+  if (!currentUser) {
+    return (
+      <div className={styles.chatContainer}>
+        <div className={styles.emptyChat}>
+          <div className={styles.emptyChatIcon}>🔐</div>
+          <div className={styles.emptyChatTitle}>Vui lòng đăng nhập</div>
+          <div className={styles.emptyChatSubtitle}>Bạn cần đăng nhập để sử dụng chat</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Check token
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return (
+      <div className={styles.chatContainer}>
+        <div className={styles.emptyChat}>
+          <div className={styles.emptyChatIcon}>🔑</div>
+          <div className={styles.emptyChatTitle}>Token không hợp lệ</div>
+          <div className={styles.emptyChatSubtitle}>Vui lòng đăng nhập lại</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ 
-      display: 'flex', 
-      height: 'calc(100vh - 60px)', 
-      backgroundColor: '#f0f2f5' 
-    }}>
+    <div className={styles.chatContainer}>
       {/* Sidebar - Conversations */}
-      <div style={{
-        width: 320,
-        backgroundColor: 'white',
-        borderRight: '1px solid #e1e8ed',
-        display: 'flex',
-        flexDirection: 'column'
-      }}>
+      <div className={styles.sidebar}>
         {/* Header */}
-        <div style={{
-          padding: 16,
-          borderBottom: '1px solid #e1e8ed',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <h3 style={{ margin: 0, fontSize: 18 }}>💬 Chat</h3>
+        <div className={styles.sidebarHeader}>
+          <h3 className={styles.sidebarTitle}>💬 Chat</h3>
           <button
             onClick={() => setShowUsersList(!showUsersList)}
-            style={{
-              backgroundColor: '#1da1f2',
-              color: 'white',
-              border: 'none',
-              borderRadius: 20,
-              padding: '6px 12px',
-              cursor: 'pointer',
-              fontSize: 12
-            }}
+            className={styles.newChatButton}
           >
             ➕ Chat mới
           </button>
@@ -378,59 +554,27 @@ const ChatPage = () => {
 
         {/* Users List (when creating new chat) */}
         {showUsersList && (
-          <div style={{
-            maxHeight: 200,
-            overflowY: 'auto',
-            borderBottom: '1px solid #e1e8ed'
-          }}>
-            <div style={{ padding: '8px 16px', fontSize: 12, color: '#657786', fontWeight: 'bold' }}>
+          <div className={styles.usersList}>
+            <div className={styles.usersListHeader}>
               CHỌN NGƯỜI ĐỂ CHAT
             </div>
-            {users.map(user => (
+            {users
+              .filter(user => user && user.id && user.name) // Filter out null/invalid users
+              .map(user => (
               <div
                 key={user.id}
                 onClick={() => selectUser(user)}
-                style={{
-                  padding: '8px 16px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  transition: 'background-color 0.2s'
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#f7f9fa'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = 'white'}
+                className={styles.userItem}
               >
-                <div style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: '50%',
-                  backgroundColor: '#1da1f2',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginRight: 12,
-                  color: 'white',
-                  fontSize: 12,
-                  fontWeight: 'bold',
-                  position: 'relative'
-                }}>
+                <div className={styles.userAvatar}>
                   {user.name.charAt(0).toUpperCase()}
                   {onlineUsers[user.id] && (
-                    <div style={{
-                      position: 'absolute',
-                      bottom: -2,
-                      right: -2,
-                      width: 12,
-                      height: 12,
-                      borderRadius: '50%',
-                      backgroundColor: '#4ade80',
-                      border: '2px solid white'
-                    }} />
+                    <div className={styles.onlineIndicator} />
                   )}
                 </div>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 'bold' }}>{user.name}</div>
-                  <div style={{ fontSize: 11, color: onlineUsers[user.id] ? '#4ade80' : '#657786' }}>
+                <div className={styles.userInfo}>
+                  <div className={styles.userName}>{user.name}</div>
+                  <div className={`${styles.userStatus} ${onlineUsers[user.id] ? styles.online : styles.offline}`}>
                     {onlineUsers[user.id] ? '🟢 Online' : '⚫ Offline'}
                   </div>
                 </div>
@@ -440,91 +584,41 @@ const ChatPage = () => {
         )}
 
         {/* Conversations List */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div className={styles.conversationsList}>
           {conversations.length === 0 ? (
-            <div style={{ padding: 20, textAlign: 'center', color: '#657786' }}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>💬</div>
-              <p>Chưa có cuộc trò chuyện nào</p>
-              <p style={{ fontSize: 12 }}>Nhấn "Chat mới" để bắt đầu</p>
+            <div className={styles.emptyConversations}>
+              <div className={styles.emptyIcon}>💬</div>
+              <div className={styles.emptyTitle}>Chưa có cuộc trò chuyện nào</div>
+              <div className={styles.emptySubtitle}>Nhấn "Chat mới" để bắt đầu</div>
             </div>
           ) : (
-            conversations.map(conv => (
+            conversations
+              .filter(conv => conv && conv.other_user_id && conv.name) // Filter out null/invalid conversations
+              .map(conv => (
               <div
                 key={conv.other_user_id}
-                style={{
-                  position: 'relative',
-                  borderBottom: '1px solid #f7f9fa',
-                  backgroundColor: selectedUserId === conv.other_user_id ? '#e3f2fd' : 'white',
-                  transition: 'background-color 0.2s'
-                }}
+                className={`${styles.conversationItem} ${selectedUserId === conv.other_user_id ? styles.selected : ''}`}
               >
                 {/* Main conversation item */}
                 <div
                   onClick={() => selectUser({ id: conv.other_user_id, name: conv.name, email: conv.email })}
-                  style={{
-                    padding: 12,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (selectedUserId !== conv.other_user_id) {
-                      e.currentTarget.parentElement.style.backgroundColor = '#f7f9fa';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (selectedUserId !== conv.other_user_id) {
-                      e.currentTarget.parentElement.style.backgroundColor = 'white';
-                    }
-                  }}
+                  className={styles.conversationContent}
                 >
-                  <div style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: '50%',
-                    backgroundColor: '#1da1f2',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginRight: 12,
-                    color: 'white',
-                    fontSize: 16,
-                    fontWeight: 'bold',
-                    position: 'relative'
-                  }}>
+                  <div className={styles.conversationAvatar}>
                     {conv.name.charAt(0).toUpperCase()}
                     {onlineUsers[conv.other_user_id] && (
-                      <div style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        right: 0,
-                        width: 14,
-                        height: 14,
-                        borderRadius: '50%',
-                        backgroundColor: '#4ade80',
-                        border: '2px solid white'
-                      }} />
+                      <div className={styles.onlineIndicator} />
                     )}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ 
-                      fontSize: 14, 
-                      fontWeight: 'bold',
-                      marginBottom: 2
-                    }}>
+                  <div className={styles.conversationInfo}>
+                    <div className={styles.conversationName}>
                       {conv.name}
                     </div>
-                    <div style={{ 
-                      fontSize: 12, 
-                      color: '#657786',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap'
-                    }}>
-                      {conv.last_sender_id === currentUser.id ? 'Bạn: ' : ''}
+                    <div className={styles.lastMessage}>
+                      {currentUser && conv.last_sender_id === currentUser.id ? 'Bạn: ' : ''}
                       {conv.last_message || 'Chưa có tin nhắn'}
                     </div>
-                    <div style={{ fontSize: 10, color: '#8899a6', marginTop: 2 }}>
+                    <div className={styles.messageTime}>
                       {conv.last_message_time && formatTime(conv.last_message_time)}
                     </div>
                   </div>
@@ -536,26 +630,7 @@ const ChatPage = () => {
                     e.stopPropagation();
                     setShowDeleteConfirm(conv.other_user_id);
                   }}
-                  style={{
-                    position: 'absolute',
-                    top: 8,
-                    right: 8,
-                    width: 24,
-                    height: 24,
-                    borderRadius: '50%',
-                    border: 'none',
-                    backgroundColor: '#ff4757',
-                    color: 'white',
-                    cursor: 'pointer',
-                    fontSize: 12,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    opacity: 0.7,
-                    transition: 'opacity 0.2s'
-                  }}
-                  onMouseEnter={(e) => e.target.style.opacity = '1'}
-                  onMouseLeave={(e) => e.target.style.opacity = '0.7'}
+                  className={styles.deleteButton}
                   title="Xóa cuộc trò chuyện"
                 >
                   ✕
@@ -563,44 +638,24 @@ const ChatPage = () => {
 
                 {/* Delete Confirmation Modal */}
                 {showDeleteConfirm === conv.other_user_id && (
-                  <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    padding: 16,
-                    zIndex: 10
-                  }}>
-                    <div style={{ textAlign: 'center', marginBottom: 16 }}>
-                      <div style={{ fontSize: 24, marginBottom: 8 }}>🗑️</div>
-                      <div style={{ fontSize: 14, fontWeight: 'bold', marginBottom: 4 }}>
+                  <div className={styles.deleteConfirmation}>
+                    <div className={styles.deleteContent}>
+                      <div className={styles.deleteIcon}>🗑️</div>
+                      <div className={styles.deleteTitle}>
                         Xóa cuộc trò chuyện?
                       </div>
-                      <div style={{ fontSize: 12, color: '#657786' }}>
+                      <div className={styles.deleteSubtitle}>
                         Với {conv.name}
                       </div>
                     </div>
                     
-                    <div style={{ display: 'flex', gap: 8 }}>
+                    <div className={styles.deleteActions}>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setShowDeleteConfirm(null);
                         }}
-                        style={{
-                          padding: '6px 12px',
-                          borderRadius: 16,
-                          border: '1px solid #e1e8ed',
-                          backgroundColor: 'white',
-                          cursor: 'pointer',
-                          fontSize: 12
-                        }}
+                        className={styles.deleteCancel}
                       >
                         Hủy
                       </button>
@@ -609,16 +664,7 @@ const ChatPage = () => {
                           e.stopPropagation();
                           deleteConversation(conv.other_user_id);
                         }}
-                        style={{
-                          padding: '6px 12px',
-                          borderRadius: 16,
-                          border: 'none',
-                          backgroundColor: '#ff4757',
-                          color: 'white',
-                          cursor: 'pointer',
-                          fontSize: 12,
-                          fontWeight: 'bold'
-                        }}
+                        className={styles.deleteConfirm}
                       >
                         Xóa
                       </button>
@@ -632,82 +678,62 @@ const ChatPage = () => {
       </div>
 
       {/* Main Chat Area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div className={styles.chatArea}>
+        {/* Real-time Mode Notice */}
+        <div style={{
+          background: 'linear-gradient(45deg, #667eea, #764ba2)',
+          color: 'white',
+          padding: '8px 16px',
+          textAlign: 'center',
+          fontSize: '14px',
+          fontWeight: '500',
+          borderRadius: '0 0 8px 8px',
+          marginBottom: '8px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+        }}>
+          🚀 Chat Real-time - Tin nhắn được gửi ngay lập tức qua Socket.IO
+        </div>
+        
         {selectedUser ? (
           <>
             {/* Chat Header */}
-            <div style={{
-              padding: 16,
-              backgroundColor: 'white',
-              borderBottom: '1px solid #e1e8ed',
-              display: 'flex',
-              alignItems: 'center'
-            }}>
-              <div style={{
-                width: 40,
-                height: 40,
-                borderRadius: '50%',
-                backgroundColor: '#1da1f2',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 12,
-                color: 'white',
-                fontSize: 14,
-                fontWeight: 'bold',
-                position: 'relative'
-              }}>
-                {selectedUser.name.charAt(0).toUpperCase()}
-                {onlineUsers[selectedUser.id] && (
-                  <div style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    right: 0,
-                    width: 12,
-                    height: 12,
-                    borderRadius: '50%',
-                    backgroundColor: '#4ade80',
-                    border: '2px solid white'
-                  }} />
-                )}
-              </div>
-              <div>
-                <Link 
-                  to={`/profile/${selectedUser.id}`}
-                  style={{ textDecoration: 'none', color: 'inherit' }}
-                >
-                  <div style={{ fontSize: 16, fontWeight: 'bold' }}>{selectedUser.name}</div>
-                </Link>
-                <div style={{ fontSize: 12, color: onlineUsers[selectedUser.id] ? '#4ade80' : '#657786' }}>
-                  {onlineUsers[selectedUser.id] ? '🟢 Đang hoạt động' : '⚫ Không hoạt động'}
-                  {typing[selectedUser.id] && ' • đang nhập...'}
+            <div className={styles.chatHeader}>
+              <div className={styles.chatHeaderUser}>
+                <div className={styles.chatHeaderAvatar}>
+                  {selectedUser.name.charAt(0).toUpperCase()}
+                  {onlineUsers[selectedUser.id] && (
+                    <div className={styles.onlineIndicator} />
+                  )}
+                </div>
+                <div className={styles.chatHeaderInfo}>
+                  <Link 
+                    to={`/profile/${selectedUser.id}`}
+                    style={{ textDecoration: 'none', color: 'inherit' }}
+                  >
+                    <div className={styles.chatHeaderName}>{selectedUser.name}</div>
+                  </Link>
+                  <div className={`${styles.chatHeaderStatus} ${onlineUsers[selectedUser.id] ? styles.online : styles.offline}`}>
+                    {onlineUsers[selectedUser.id] ? '🟢 Đang hoạt động' : '⚫ Không hoạt động'}
+                    {typing[selectedUser.id] && ' • đang nhập...'}
+                    {isRefreshing && ' • 🔄 đang làm mới...'}
+                  </div>
                 </div>
               </div>
+              <Link 
+                to={`/profile/${selectedUser.id}`}
+                className={styles.profileButton}
+              >
+                👤 Xem profile
+              </Link>
             </div>
 
             {/* Messages Area */}
-            <div style={{
-              flex: 1,
-              overflowY: 'auto',
-              padding: 16,
-              backgroundColor: '#f0f2f5'
-            }}>
+            <div className={styles.messagesContainer}>
               {Object.keys(messageGroups).map(dateKey => (
-                <div key={dateKey}>
+                <div key={dateKey} className={styles.dateGroup}>
                   {/* Date Separator */}
-                  <div style={{
-                    textAlign: 'center',
-                    margin: '16px 0',
-                    position: 'relative'
-                  }}>
-                    <div style={{
-                      display: 'inline-block',
-                      backgroundColor: '#e1e8ed',
-                      padding: '4px 12px',
-                      borderRadius: 12,
-                      fontSize: 12,
-                      color: '#657786'
-                    }}>
+                  <div className={styles.dateHeader}>
+                    <div className={styles.dateLabel}>
                       {formatDate(dateKey)}
                     </div>
                   </div>
@@ -718,30 +744,19 @@ const ChatPage = () => {
                     return (
                       <div
                         key={msg.id}
-                        style={{
-                          display: 'flex',
-                          justifyContent: isMyMessage ? 'flex-end' : 'flex-start',
-                          marginBottom: 8
-                        }}
+                        className={`${styles.message} ${isMyMessage ? styles.own : ''}`}
                       >
-                        <div style={{
-                          maxWidth: '70%',
-                          padding: '8px 12px',
-                          borderRadius: 18,
-                          backgroundColor: isMyMessage ? '#1da1f2' : 'white',
-                          color: isMyMessage ? 'white' : '#14171a',
-                          position: 'relative',
-                          wordWrap: 'break-word'
-                        }}>
-                          <div style={{ fontSize: 14, lineHeight: 1.4 }}>
+                        <div className={styles.messageAvatar}>
+                          {isMyMessage ? 
+                            currentUser.name.charAt(0).toUpperCase() : 
+                            selectedUser.name.charAt(0).toUpperCase()
+                          }
+                        </div>
+                        <div className={styles.messageContent}>
+                          <div className={`${styles.messageBubble} ${isMyMessage ? styles.own : styles.other}`}>
                             {msg.content}
                           </div>
-                          <div style={{
-                            fontSize: 10,
-                            opacity: 0.7,
-                            marginTop: 4,
-                            textAlign: 'right'
-                          }}>
+                          <div className={`${styles.messageTime} ${isMyMessage ? styles.own : styles.other}`}>
                             {formatTime(msg.created_at)}
                           </div>
                         </div>
@@ -753,20 +768,11 @@ const ChatPage = () => {
               
               {/* Typing Indicator */}
               {typing[selectedUser.id] && (
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'flex-start',
-                  marginBottom: 8
-                }}>
-                  <div style={{
-                    backgroundColor: 'white',
-                    padding: '8px 12px',
-                    borderRadius: 18,
-                    color: '#657786',
-                    fontSize: 12,
-                    fontStyle: 'italic'
-                  }}>
-                    {selectedUser.name} đang nhập...
+                <div className={styles.typingIndicator}>
+                  <div className={styles.typingDots}>
+                    <div className={styles.typingDot}></div>
+                    <div className={styles.typingDot}></div>
+                    <div className={styles.typingDot}></div>
                   </div>
                 </div>
               )}
@@ -775,54 +781,20 @@ const ChatPage = () => {
             </div>
 
             {/* Message Input */}
-            <div style={{
-              padding: 16,
-              backgroundColor: 'white',
-              borderTop: '1px solid #e1e8ed'
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'flex-end',
-                gap: 8,
-                backgroundColor: '#f7f9fa',
-                borderRadius: 20,
-                padding: 8
-              }}>
+            <div className={styles.inputContainer}>
+              <div className={styles.inputWrapper}>
                 <textarea
                   placeholder={`Nhắn tin cho ${selectedUser.name}...`}
                   value={content}
                   onChange={handleTyping}
                   onKeyPress={handleKeyPress}
-                  style={{
-                    flex: 1,
-                    border: 'none',
-                    outline: 'none',
-                    resize: 'none',
-                    backgroundColor: 'transparent',
-                    padding: '8px 12px',
-                    fontSize: 14,
-                    lineHeight: 1.4,
-                    maxHeight: 100,
-                    minHeight: 20
-                  }}
+                  className={styles.messageInput}
                   rows={1}
                 />
                 <button
                   onClick={sendMessage}
                   disabled={!content.trim()}
-                  style={{
-                    backgroundColor: content.trim() ? '#1da1f2' : '#e1e8ed',
-                    color: content.trim() ? 'white' : '#657786',
-                    border: 'none',
-                    borderRadius: '50%',
-                    width: 36,
-                    height: 36,
-                    cursor: content.trim() ? 'pointer' : 'not-allowed',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 16
-                  }}
+                  className={styles.sendButton}
                 >
                   ➤
                 </button>
@@ -831,18 +803,10 @@ const ChatPage = () => {
           </>
         ) : (
           /* No chat selected */
-          <div style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: 'white'
-          }}>
-            <div style={{ textAlign: 'center', color: '#657786' }}>
-              <div style={{ fontSize: 64, marginBottom: 16 }}>💬</div>
-              <h3>Chọn một cuộc trò chuyện</h3>
-              <p>Chọn từ danh sách bên trái hoặc tạo chat mới</p>
-            </div>
+          <div className={styles.emptyChat}>
+            <div className={styles.emptyChatIcon}>💬</div>
+            <div className={styles.emptyChatTitle}>Chọn một cuộc trò chuyện</div>
+            <div className={styles.emptyChatSubtitle}>Chọn từ danh sách bên trái hoặc tạo chat mới</div>
           </div>
         )}
       </div>

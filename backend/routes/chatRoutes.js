@@ -45,7 +45,7 @@ router.get('/conversations', authMiddleware, async (req, res) => {
     
     res.json(conversations);
   } catch (err) {
-    console.error('Error fetching conversations:', err);
+    // ...existing code...
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -70,7 +70,7 @@ router.get('/:otherUserId', authMiddleware, async (req, res) => {
 
     res.json(messages);
   } catch (err) {
-    console.error('Fetch chat error:', err);
+    // ...existing code...
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -93,7 +93,56 @@ router.delete('/conversation/:otherUserId', authMiddleware, async (req, res) => 
       deletedCount: result.affectedRows
     });
   } catch (err) {
-    console.error('Error deleting conversation:', err);
+    // ...existing code...
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Gửi tin nhắn mới
+router.post('/send', authMiddleware, async (req, res) => {
+  const senderId = req.user.id;
+  const { receiverId, content } = req.body;
+  
+  try {
+    // Validate input
+    if (!receiverId || !content || !content.trim()) {
+      return res.status(400).json({ message: 'Receiver ID and content are required' });
+    }
+    
+    // Check if receiver exists
+    const [receivers] = await db.query('SELECT id FROM users WHERE id = ?', [receiverId]);
+    if (receivers.length === 0) {
+      return res.status(404).json({ message: 'Receiver not found' });
+    }
+    
+    // Insert message into database
+    const [result] = await db.query(
+      'INSERT INTO messages (sender_id, receiver_id, content, created_at) VALUES (?, ?, ?, NOW())',
+      [senderId, receiverId, content.trim()]
+    );
+    
+    // Fetch the created message with user names
+    const [messages] = await db.query(`
+      SELECT 
+        m.id,
+        m.sender_id,
+        m.receiver_id,
+        m.content,
+        m.created_at,
+        s.name as sender_name,
+        r.name as receiver_name
+      FROM messages m
+      JOIN users s ON m.sender_id = s.id
+      JOIN users r ON m.receiver_id = r.id
+      WHERE m.id = ?
+    `, [result.insertId]);
+    
+    res.status(201).json({
+      message: 'Message sent successfully',
+      data: messages[0]
+    });
+  } catch (err) {
+    // ...existing code...
     res.status(500).json({ message: 'Server error' });
   }
 });

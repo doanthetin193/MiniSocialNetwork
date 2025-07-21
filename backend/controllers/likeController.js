@@ -75,7 +75,7 @@ const toggleLike = async (req, res) => {
             });
           }
         } catch (err) {
-          console.error('Error sending realtime like notification:', err);
+          // ...existing code...
         }
       }
       
@@ -85,7 +85,7 @@ const toggleLike = async (req, res) => {
       });
     }
   } catch (err) {
-    console.error('Toggle like error:', err);
+    // ...existing code...
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -106,7 +106,7 @@ const getPostLikes = async (req, res) => {
 
     res.json(likes);
   } catch (err) {
-    console.error('Get post likes error:', err);
+    // ...existing code...
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -134,7 +134,7 @@ const getPostLikeStatus = async (req, res) => {
       is_liked: userLike.length > 0
     });
   } catch (err) {
-    console.error('Get like status error:', err);
+    // ...existing code...
     res.status(500).json({ message: 'Server error' });
   }
 };

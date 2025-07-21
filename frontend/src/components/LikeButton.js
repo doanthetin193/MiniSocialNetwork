@@ -28,7 +28,7 @@ const LikeButton = ({ postId, initialLikesCount, initialIsLiked, onLikeUpdate })
         onLikeUpdate(postId, newIsLiked, newLikesCount);
       }
     } catch (err) {
-      console.error('Error toggling like:', err);
+      // ...existing code...
       alert('Lỗi khi thích bài viết');
     }
   };

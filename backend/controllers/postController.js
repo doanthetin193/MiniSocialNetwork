@@ -9,7 +9,7 @@ const sendRealtimeNotification = (userId, notification) => {
       io.to(userSocketId).emit('new_notification', notification);
     }
   } catch (err) {
-    console.error('Error sending realtime notification:', err);
+    // ...existing code...
   }
 };
 
@@ -28,7 +28,7 @@ const createPost = async (req, res) => {
     );
     res.status(201).json({ message: 'Post created successfully' });
   } catch (err) {
-    console.error('Error creating post:', err);
+    // ...existing code...
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -47,7 +47,7 @@ const getAllPosts = async (req, res) => {
     `);
     res.json(posts);
   } catch (err) {
-    console.error('Error fetching posts:', err);
+    // ...existing code...
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -68,7 +68,7 @@ const getMyPosts = async (req, res) => {
 
     res.json(posts);
   } catch (err) {
-    console.error('Error fetching my posts:', err);
+    // ...existing code...
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -90,7 +90,7 @@ const updatePost = async (req, res) => {
 
     res.json({ message: 'Post updated successfully' });
   } catch (err) {
-    console.error('Error updating post:', err);
+    // ...existing code...
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -111,7 +111,7 @@ const deletePost = async (req, res) => {
 
     res.json({ message: 'Post deleted successfully' });
   } catch (err) {
-    console.error('Error deleting post:', err);
+    // ...existing code...
     res.status(500).json({ message: 'Server error' });
   }
 };

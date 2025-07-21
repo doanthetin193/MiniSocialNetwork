@@ -25,7 +25,7 @@ const FollowButton = ({ userId, initialIsFollowing = false, onFollowUpdate }) =>
         onFollowUpdate(userId, res.data.isFollowing);
       }
     } catch (err) {
-      console.error('Error toggling follow:', err);
+      // ...existing code...
       alert('Lỗi khi follow/unfollow');
     } finally {
       setLoading(false);

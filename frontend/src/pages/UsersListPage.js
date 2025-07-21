@@ -47,7 +47,7 @@ const UsersListPage = () => {
         setFollowStatus(statusMap);
 
       } catch (err) {
-        console.error('Error fetching users:', err);
+        // ...existing code...
       }
     };
 

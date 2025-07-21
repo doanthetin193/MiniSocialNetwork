@@ -39,7 +39,7 @@ router.post(
 
       res.status(201).json({ message: 'Post with image created successfully' });
     } catch (err) {
-      console.error('Error creating post with image:', err);
+      // ...existing code...
       res.status(500).json({ message: 'Server error' });
     }
   }
@@ -95,7 +95,7 @@ router.get('/search', async (req, res) => {
     res.json(posts);
     
   } catch (err) {
-    console.error('Error searching posts:', err);
+    // ...existing code...
     res.status(500).json({ message: 'Server error' });
   }
 });
