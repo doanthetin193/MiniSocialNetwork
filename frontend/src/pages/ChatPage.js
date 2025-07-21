@@ -172,9 +172,16 @@ const ChatPage = () => {
     // Register user only once
     const registerUser = () => {
       if (!hasRegistered.current && socket.connected) {
-        // ...existing code...
         socket.emit('register', currentUser.id);
         hasRegistered.current = true;
+        // Gửi check_online ngay sau khi register
+        const allUserIds = users.map(u => u.id);
+        if (selectedUserId && !allUserIds.includes(selectedUserId)) {
+          allUserIds.push(selectedUserId);
+        }
+        if (allUserIds.length > 0) {
+          socket.emit('check_online', allUserIds);
+        }
       }
     };
 
@@ -191,8 +198,7 @@ const ChatPage = () => {
 
     // Khi nhận tin nhắn mới qua socket
     const handleReceiveMessage = (msg) => {
-      // Cập nhật lại conversations và trạng thái online
-      fetchConversations();
+      // Cập nhật lại trạng thái online
       socket.emit('check_online', [msg.senderId, msg.receiverId]);
       // Nếu đang xem đúng cuộc trò chuyện thì cập nhật khung chat
       const currentSelectedUserId = selectedUserIdRef.current ? Number(selectedUserIdRef.current) : null;
@@ -204,7 +210,7 @@ const ChatPage = () => {
         setMessages(prev => {
           const exists = prev.some(m => m.id === msg.id);
           if (!exists) {
-            const updated = [...prev, {
+            return [...prev, {
               id: msg.id,
               sender_id: msg.senderId,
               receiver_id: msg.receiverId,
@@ -213,21 +219,113 @@ const ChatPage = () => {
               sender_name: msg.sender_name,
               receiver_name: msg.receiver_name
             }];
-            return updated;
           }
           return prev;
         });
       }
+      // Cập nhật conversations local nếu có thể
+      setConversations(prev => {
+        let updated = [...prev];
+        const otherId = msg.senderId === currentUser.id ? msg.receiverId : msg.senderId;
+        const idx = updated.findIndex(c => c.other_user_id === otherId);
+        if (idx !== -1) {
+          updated[idx] = {
+            ...updated[idx],
+            last_message: msg.content,
+            last_message_time: msg.createdAt || new Date(),
+            last_sender_id: msg.senderId
+          };
+          // Đưa cuộc trò chuyện lên đầu
+          const [conv] = updated.splice(idx, 1);
+          updated.unshift(conv);
+        } else {
+          // Nếu chưa có, thêm mới
+          updated.unshift({
+            other_user_id: otherId,
+            name: msg.senderId === currentUser.id ? msg.receiver_name : msg.sender_name,
+            email: '', // Nếu có thể lấy email thì thêm vào
+            last_message: msg.content,
+            last_message_time: msg.createdAt || new Date(),
+            last_sender_id: msg.senderId
+          });
+        }
+        return updated;
+      });
+    };
+
+    // Khi gửi tin nhắn thành công (server xác nhận), cập nhật ngay khung chat và sidebar
+    const handleMessageSent = (msg) => {
+      // Nếu đang xem đúng cuộc trò chuyện thì cập nhật khung chat
+      const currentSelectedUserId = selectedUserIdRef.current ? Number(selectedUserIdRef.current) : null;
+      const isRelated = currentSelectedUserId && (
+        (Number(msg.senderId) === currentSelectedUserId && Number(msg.receiverId) === Number(currentUser?.id)) ||
+        (Number(msg.receiverId) === currentSelectedUserId && Number(msg.senderId) === Number(currentUser?.id))
+      );
+      if (isRelated) {
+        setMessages(prev => {
+          const exists = prev.some(m => m.id === msg.id);
+          if (!exists) {
+            return [...prev, {
+              id: msg.id,
+              sender_id: msg.senderId,
+              receiver_id: msg.receiverId,
+              content: msg.content,
+              created_at: msg.createdAt || new Date(),
+              sender_name: msg.sender_name,
+              receiver_name: msg.receiver_name
+            }];
+          }
+          return prev;
+        });
+      }
+      // Cập nhật conversations local nếu có thể
+      setConversations(prev => {
+        let updated = [...prev];
+        const otherId = msg.senderId === currentUser.id ? msg.receiverId : msg.senderId;
+        const idx = updated.findIndex(c => c.other_user_id === otherId);
+        if (idx !== -1) {
+          updated[idx] = {
+            ...updated[idx],
+            last_message: msg.content,
+            last_message_time: msg.createdAt || new Date(),
+            last_sender_id: msg.senderId
+          };
+          // Đưa cuộc trò chuyện lên đầu
+          const [conv] = updated.splice(idx, 1);
+          updated.unshift(conv);
+        } else {
+          // Nếu chưa có, thêm mới
+          updated.unshift({
+            other_user_id: otherId,
+            name: msg.senderId === currentUser.id ? msg.receiver_name : msg.sender_name,
+            email: '',
+            last_message: msg.content,
+            last_message_time: msg.createdAt || new Date(),
+            last_sender_id: msg.senderId
+          });
+        }
+        return updated;
+      });
     };
 
     const handleUserOnline = ({ userId, online }) => {
       setOnlineUsers(prev => ({ ...prev, [userId]: online }));
       setOnlineStatusVersion(v => v + 1); // Force re-render
+      fetchConversations();
+      // Nếu đang xem đúng user thì force re-render selectedUser
+      if (selectedUser && selectedUser.id === userId) {
+        setSelectedUser(user => ({ ...user }));
+      }
     };
 
     const handleOnlineStatus = (status) => {
       setOnlineUsers(status);
       setOnlineStatusVersion(v => v + 1);
+      fetchConversations();
+      // Nếu đang xem đúng user thì force re-render selectedUser
+      if (selectedUser && status[selectedUser.id]) {
+        setSelectedUser(user => ({ ...user }));
+      }
     };
 
     const handleUserTyping = ({ senderId }) => {
@@ -248,6 +346,7 @@ const ChatPage = () => {
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
     socket.on('receive_message', handleReceiveMessage);
+    socket.on('message_sent', handleMessageSent);
     socket.on('user_online', handleUserOnline);
     socket.on('online_status', handleOnlineStatus);
     socket.on('user_typing', handleUserTyping);
@@ -256,13 +355,7 @@ const ChatPage = () => {
     // Cleanup function
     return () => {
       // ...existing code...
-      socket.off('connect', handleConnect);
-      socket.off('disconnect', handleDisconnect);
-      socket.off('receive_message', handleReceiveMessage);
-      socket.off('user_online', handleUserOnline);
-      socket.off('online_status', handleOnlineStatus);
-      socket.off('user_typing', handleUserTyping);
-      socket.off('user_stop_typing', handleUserStopTyping);
+      socket.off('message_sent', handleMessageSent);
     };
   }, [currentUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 

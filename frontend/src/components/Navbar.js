@@ -34,18 +34,6 @@ const Navbar = () => {
           🏠 Trang chủ
         </Link>
         <Link 
-          to="/create-post" 
-          className={`${styles.navLink} ${isActiveLink('/create-post') ? styles.active : ''}`}
-        >
-          ✏️ Tạo bài viết
-        </Link>
-        <Link 
-          to="/myposts" 
-          className={`${styles.navLink} ${isActiveLink('/myposts') ? styles.active : ''}`}
-        >
-          📝 Bài viết của tôi
-        </Link>
-        <Link 
           to="/users" 
           className={`${styles.navLink} ${isActiveLink('/users') ? styles.active : ''}`}
         >
@@ -86,15 +74,13 @@ const Navbar = () => {
         )}
         
         <button onClick={handleLogout} className={styles.logoutButton}>
-          🚪 Đăng xuất
+          <span className={styles.logoutIcon}>↩️</span> Đăng xuất
         </button>
       </div>
 
       {/* Mobile Menu */}
       <div className={`${styles.mobileMenu} ${mobileMenuOpen ? styles.open : ''}`}>
         <Link to="/" className={styles.mobileNavLink}>🏠 Trang chủ</Link>
-        <Link to="/create-post" className={styles.mobileNavLink}>✏️ Tạo bài viết</Link>
-        <Link to="/myposts" className={styles.mobileNavLink}>� Bài viết của tôi</Link>
         <Link to="/users" className={styles.mobileNavLink}>👥 Người dùng</Link>
         <Link to="/chat" className={styles.mobileNavLink}>💬 Chat</Link>
       </div>

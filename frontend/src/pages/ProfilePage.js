@@ -12,6 +12,11 @@ const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState('posts'); // posts, followers, following
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
+  const [editingPostId, setEditingPostId] = useState(null);
+  const [editingContent, setEditingContent] = useState('');
+  const [editingImage, setEditingImage] = useState(null);
+  const [editingImagePreview, setEditingImagePreview] = useState(null);
+  const [editingImageUrl, setEditingImageUrl] = useState('');
   
   const currentUser = JSON.parse(localStorage.getItem('user'));
   const isOwnProfile = currentUser && currentUser.id === parseInt(userId);
@@ -85,6 +90,74 @@ const ProfilePage = () => {
         </div>
       </div>
     );
+  }
+
+  function handleEditPost(postId, content, image_url) {
+    setEditingPostId(postId);
+    setEditingContent(content);
+    setEditingImage(null);
+    setEditingImagePreview(null);
+    setEditingImageUrl(image_url || '');
+  }
+  function handleEditImageChange(e) {
+    const file = e.target.files[0];
+    if (file) {
+      setEditingImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditingImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+  function handleRemoveEditImage() {
+    setEditingImage(null);
+    setEditingImagePreview(null);
+    setEditingImageUrl('');
+  }
+  async function handleSaveEdit(postId) {
+    try {
+      const token = localStorage.getItem('token');
+      let imageUrl = editingImageUrl;
+      if (editingImage) {
+        const formData = new FormData();
+        formData.append('image', editingImage);
+        const res = await axios.post('http://localhost:5000/api/upload/image', formData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        imageUrl = res.data.image_url;
+      }
+      await axios.put(`http://localhost:5000/api/posts/${postId}`, { content: editingContent, image_url: imageUrl }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setPosts(posts => posts.map(p => p.id === postId ? { ...p, content: editingContent, image_url: imageUrl } : p));
+      setEditingPostId(null);
+      setEditingContent('');
+      setEditingImage(null);
+      setEditingImagePreview(null);
+      setEditingImageUrl('');
+    } catch (err) {
+      alert('Lỗi khi cập nhật bài viết!');
+    }
+  }
+  function handleCancelEdit() {
+    setEditingPostId(null);
+    setEditingContent('');
+    setEditingImage(null);
+    setEditingImagePreview(null);
+    setEditingImageUrl('');
+  }
+  async function handleDeletePost(postId) {
+    if (!window.confirm('Bạn có chắc muốn xóa bài viết này?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:5000/api/posts/${postId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setPosts(posts => posts.filter(p => p.id !== postId));
+    } catch (err) {
+      alert('Lỗi khi xóa bài viết!');
+    }
   }
 
   return (
@@ -171,18 +244,75 @@ const ProfilePage = () => {
               <div className={styles.postsGrid}>
                 {posts.map((post) => (
                   <div key={post.id} className={styles.postCard}>
-                    <div className={styles.postContent}>{post.content}</div>
-                    {post.image_url && (
-                      <img src={post.image_url} alt="Post" className={styles.postImage} />
+                    {editingPostId === post.id ? (
+                      <>
+                        <textarea
+                          className={styles.editTextarea}
+                          value={editingContent}
+                          onChange={e => setEditingContent(e.target.value)}
+                          rows={4}
+                        />
+                        <div className={styles.editUploadSection}>
+                          <input
+                            type="file"
+                            onChange={handleEditImageChange}
+                            accept="image/*"
+                            className={styles.uploadInput}
+                          />
+                          {!editingImagePreview && !editingImageUrl ? (
+                            <div className={styles.uploadText}>Thêm ảnh vào bài viết</div>
+                          ) : (
+                            <div className={styles.imagePreview}>
+                              <img
+                                src={editingImagePreview || editingImageUrl}
+                                alt="Preview"
+                                className={styles.previewImage}
+                              />
+                              <button
+                                type="button"
+                                onClick={handleRemoveEditImage}
+                                className={styles.removeImageButton}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        <div className={styles.postActions}>
+                          <button className={styles.saveButton} onClick={() => handleSaveEdit(post.id)}>
+                            💾 Lưu
+                          </button>
+                          <button className={styles.cancelButton} onClick={handleCancelEdit}>
+                            ❌ Hủy
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className={styles.postContent}>{post.content}</div>
+                        {post.image_url && (
+                          <img src={post.image_url} alt="Post" className={styles.postImage} />
+                        )}
+                        <div className={styles.postMeta}>
+                          <div className={styles.postLikes}>
+                            ❤️ {post.likes_count || 0}
+                          </div>
+                          <div className={styles.postDate}>
+                            📅 {new Date(post.created_at).toLocaleDateString('vi-VN')}
+                          </div>
+                        </div>
+                        {isOwnProfile && (
+                          <div className={styles.postActions}>
+                            <button className={styles.editButton} onClick={() => handleEditPost(post.id, post.content, post.image_url)}>
+                              ✏️ Sửa
+                            </button>
+                            <button className={styles.deleteButton} onClick={() => handleDeletePost(post.id)}>
+                              🗑️ Xóa
+                            </button>
+                          </div>
+                        )}
+                      </>
                     )}
-                    <div className={styles.postMeta}>
-                      <div className={styles.postLikes}>
-                        ❤️ {post.likes_count || 0}
-                      </div>
-                      <div className={styles.postDate}>
-                        📅 {new Date(post.created_at).toLocaleDateString('vi-VN')}
-                      </div>
-                    </div>
                   </div>
                 ))}
               </div>

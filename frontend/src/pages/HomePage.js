@@ -201,149 +201,94 @@ const HomePage = () => {
     <div className={styles.container}>
       {/* Main Content */}
       <div className={styles.mainContent}>
-        <div className={styles.header}>
-          <h2 className={styles.title}>Trang chủ</h2>
-          <div className={styles.navigation}>
-            <Link to="/myposts" className={styles.myPostsLink}>📝 Bài viết của tôi</Link>
-          </div>
+        {/* Header bỏ trống hoặc border-bottom nhẹ nếu muốn */}
+        <div className={styles.header}></div>
+        {/* Nút tạo bài viết mới đặt trên danh sách bài viết */}
+        <div className={styles.createPostWrapper}>
           <button onClick={() => navigate('/create-post')} className={styles.createPostButton}>
-            ➕ Tạo bài viết mới
+            Bạn đang nghĩ gì?
           </button>
         </div>
-
         {/* Posts */}
-        {posts.map((post) => (
-          <div key={post.id} className={styles.postCard}>
-            <div className={styles.postHeader}>
-              <div className={styles.userInfo}>
-                <Link to={`/profile/${post.user_id}`} className={styles.userName}>
-                  {post.name}
-                </Link>
-                <span className={styles.userEmail}>({post.email})</span>
-              </div>
-            </div>
-            
-            <div className={styles.postContent}>{post.content}</div>
-            
-            {post.image_url && (
-              <img src={post.image_url} alt="Post" className={styles.postImage} />
-            )}
-            
-            <div className={styles.postDate}>
-              {new Date(post.created_at).toLocaleString()}
-            </div>
-
-            {/* Like Button và số lượt like */}
-            <div className={styles.interactionBar}>
-              <button 
-                onClick={() => handleLikeToggle(post.id)}
-                className={`${styles.likeButton} ${likedPosts.has(post.id) ? styles.liked : styles.notLiked}`}
-              >
-                {likedPosts.has(post.id) ? '❤️' : '🤍'} {post.likes_count || 0}
-              </button>
-
-              <button 
-                onClick={() => toggleComments(post.id)} 
-                className={styles.commentButton}
-              >
-                💬 {expandedPostId === post.id ? 'Ẩn bình luận' : 'Xem bình luận'}
-              </button>
-            </div>
-
-            {expandedPostId === post.id && (
-              <div className={styles.commentsSection}>
-                <h4 className={styles.commentsTitle}>Bình luận</h4>
-                {comments[post.id]?.map((cmt) => (
-                  <div key={cmt.id} className={styles.commentItem}>
-                    <span className={styles.commentAuthor}>{cmt.name}:</span>
-                    <span className={styles.commentContent}>{cmt.content}</span>
-                  </div>
-                ))}
-
-                {token && (
-                  <div className={styles.commentInputSection}>
-                    <input
-                      value={newComment[post.id] || ''}
-                      onChange={(e) =>
-                        setNewComment((prev) => ({ ...prev, [post.id]: e.target.value }))
-                      }
-                      placeholder="Nhập bình luận..."
-                      className={styles.commentInput}
-                    />
-                    <button 
-                      onClick={() => handleCommentSubmit(post.id)} 
-                      className={styles.commentSubmitButton}
-                    >
-                      Gửi
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Sidebar */}
-      {token && (
-        <div className={styles.sidebar}>
-          {/* User Stats */}
-          <div className={styles.statsCard}>
-            <h3 className={styles.statsTitle}>Thống kê của bạn</h3>
-            <div className={styles.statsGrid}>
-              <div className={styles.statItem}>
-                <div className={styles.statNumber}>{userStats.posts}</div>
-                <div className={styles.statLabel}>Bài viết</div>
-              </div>
-              <div className={styles.statItem}>
-                <div className={styles.statNumber}>{userStats.following}</div>
-                <div className={styles.statLabel}>Đang theo dõi</div>
-              </div>
-              <div className={styles.statItem}>
-                <div className={styles.statNumber}>{userStats.followers}</div>
-                <div className={styles.statLabel}>Người theo dõi</div>
-              </div>
-              <div className={styles.statItem}>
-                <div className={styles.statNumber}>{posts.length}</div>
-                <div className={styles.statLabel}>Tổng bài viết</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Friends List */}
-          {friends.length > 0 && (
-            <div className={styles.sidebarCard}>
-              <h3 className={styles.sidebarTitle}>👥 Bạn bè ({friends.length})</h3>
-              <ul className={styles.friendsList}>
-                {friends.slice(0, 8).map((friend) => (
-                  <li key={friend.id} className={styles.friendItem}>
-                    <div className={styles.friendAvatar}>
-                      {friend.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className={styles.friendInfo}>
-                      <div className={styles.friendName} title={friend.name}>
-                        {friend.name}
-                      </div>
-                      <div className={styles.friendEmail} title={friend.email}>
-                        {friend.email}
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-              {friends.length > 8 && (
-                <div style={{ textAlign: 'center', marginTop: '15px' }}>
-                  <Link to="/friends" style={{ color: '#667eea', fontSize: '14px' }}>
-                    Xem tất cả bạn bè
+        <div className={styles.postsWrapper}>
+          {posts.map((post) => (
+            <div key={post.id} className={styles.postCard}>
+              <div className={styles.postHeader}>
+                <div className={styles.userInfo}>
+                  <Link to={`/profile/${post.user_id}`} className={styles.userName}>
+                    {post.name}
                   </Link>
+                  <span className={styles.userEmail}>({post.email})</span>
+                </div>
+              </div>
+              
+              <div className={styles.postContent}>{post.content}</div>
+              
+              {post.image_url && (
+                <img src={post.image_url} alt="Post" className={styles.postImage} />
+              )}
+              
+              <div className={styles.postDate}>
+                {new Date(post.created_at).toLocaleString()}
+              </div>
+
+              {/* Like Button và số lượt like */}
+              <div className={styles.interactionBar}>
+                <button 
+                  onClick={() => handleLikeToggle(post.id)}
+                  className={`${styles.likeButton} ${likedPosts.has(post.id) ? styles.liked : styles.notLiked}`}
+                >
+                  {likedPosts.has(post.id) ? '❤️' : '🤍'} {post.likes_count || 0}
+                </button>
+
+                <button 
+                  onClick={() => toggleComments(post.id)} 
+                  className={styles.commentButton}
+                >
+                  💬 {expandedPostId === post.id ? 'Ẩn bình luận' : 'Xem bình luận'}
+                </button>
+              </div>
+
+              {expandedPostId === post.id && (
+                <div className={styles.commentsSection}>
+                  <h4 className={styles.commentsTitle}>Bình luận</h4>
+                  {comments[post.id]?.map((cmt) => (
+                    <div key={cmt.id} className={styles.commentItem}>
+                      <span className={styles.commentAuthor}>{cmt.name}:</span>
+                      <span className={styles.commentContent}>{cmt.content}</span>
+                    </div>
+                  ))}
+
+                  {token && (
+                    <div className={styles.commentInputSection}>
+                      <input
+                        value={newComment[post.id] || ''}
+                        onChange={(e) =>
+                          setNewComment((prev) => ({ ...prev, [post.id]: e.target.value }))
+                        }
+                        placeholder="Nhập bình luận..."
+                        className={styles.commentInput}
+                      />
+                      <button 
+                        onClick={() => handleCommentSubmit(post.id)} 
+                        className={styles.commentSubmitButton}
+                      >
+                        Gửi
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          )}
-
-          {/* Suggested Users */}
+          ))}
+        </div>
+      </div>
+      {/* Sidebar */}
+      {token && (
+        <div className={styles.sidebar}>
+          {/* Suggested Users only, sticky */}
           {suggestedUsers.length > 0 && (
-            <div className={styles.sidebarCard}>
+            <div className={styles.sidebarCard + ' ' + styles.stickyCard}>
               <h3 className={styles.sidebarTitle}>✨ Gợi ý kết bạn</h3>
               <ul className={styles.friendsList}>
                 {suggestedUsers.map((user) => (

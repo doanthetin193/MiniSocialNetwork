@@ -93,19 +93,65 @@
 .featuresShowcase {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 20px;
-  max-width: 400px;
+  gap: 24px;
+  max-width: 360px;
+  margin: 40px auto 56px auto;
 }
-
-.featureCard {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 16px;
-  padding: 30px;
+.featuresShowcase .featureCard {
+  padding: 20px 18px;
+  min-width: 0;
+  margin: 0;
+  border-radius: 18px;
+  box-shadow: 0 2px 8px rgba(90,92,138,0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  transition: all 0.3s ease;
-  animation: slideInRight 0.8s ease-out;
+  background: linear-gradient(135deg, #fff 60%, #f3f4f8 100%);
+  transition: box-shadow 0.2s, transform 0.2s;
+  position: relative;
+}
+.featuresShowcase .featureCard:hover {
+  box-shadow: 0 12px 36px rgba(90,92,138,0.18);
+  transform: translateY(-8px) scale(1.03);
+}
+.featureCardCenter {
+  box-shadow: 0 8px 36px rgba(90,92,138,0.18);
+  border: 2px solid #b6b6d6;
+  z-index: 2;
+}
+.featureIconCircle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7b7fa6 0%, #b6b6d6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  box-shadow: 0 2px 12px rgba(123,127,166,0.10);
+}
+.featureIcon {
+  font-size: 2.5rem;
+  color: #fff;
+  filter: drop-shadow(0 2px 4px rgba(90,92,138,0.10));
+}
+.featuresShowcase .featureCard h3 {
+  margin: 0 0 6px 0;
+  font-size: 1.08rem;
+  color: #4b4e6d;
+  font-weight: 700;
+}
+.featuresShowcase .featureCard p {
+  margin: 0;
+  font-size: 0.98rem;
+  color: #555;
+  font-weight: 500;
+}
+@media (max-width: 700px) {
+  .featuresShowcase {
+    max-width: 98vw;
+  }
 }
 
 .featureCard:nth-child(1) {
@@ -445,6 +491,137 @@
   margin: 0;
 }
 
+/* Hiệu ứng động và gradient mới */
+.gradientText {
+  /* Gradient đậm hơn, rõ nét hơn cho chữ MiniSocial */
+  background: linear-gradient(90deg, #4b4e6d 60%, #7b7fa6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+}
+.gradientText2 {
+  background: linear-gradient(90deg, #5a5c8a, #7b7fa6, #b6b6d6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+}
+
+.cardShadow {
+  box-shadow: 0 2px 8px rgba(90,92,138,0.08), 0 1.5px 8px rgba(123,127,166,0.06);
+}
+
+.animatedBounce {
+  animation: bounce 2s infinite;
+}
+
+.animatedPulse {
+  animation: pulse 1.5s infinite;
+  box-shadow: none;
+}
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(90,92,138,0.10); }
+  70% { box-shadow: 0 0 0 8px rgba(90,92,138,0.01); }
+  100% { box-shadow: 0 0 0 0 rgba(90,92,138,0.01); }
+}
+
+.fadeInUp {
+  opacity: 0;
+  transform: translateY(30px);
+  animation: fadeInUp 0.8s forwards;
+}
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ctaGradientBg {
+  background: linear-gradient(135deg, #f7f8fa 0%, #e9eaf3 100%);
+}
+
+/* Tối ưu lại các card, nút, section cho đẹp hơn */
+/* Card giới thiệu gradient trắng-xám nhẹ, border xám sáng, chữ đậm */
+.featuresShowcase .featureCard,
+.featureCard {
+  background: linear-gradient(135deg, #fff 60%, #f3f4f8 100%);
+  color: #23223a;
+  border: 1.5px solid #e0e0e6;
+  box-shadow: 0 2px 8px rgba(90,92,138,0.06), 0 1.5px 8px rgba(123,127,166,0.04);
+  font-weight: 500;
+}
+.featuresShowcase .featureCard:hover,
+.featureCard:hover {
+  box-shadow: 0 6px 24px rgba(90,92,138,0.12);
+  transform: translateY(-2px) scale(1.02);
+}
+.featuresShowcase .featureCard h3,
+.featureCard h3 {
+  color: #4b4e6d;
+  font-weight: 700;
+}
+.featuresShowcase .featureCard p,
+.featureCard p {
+  color: #555;
+  font-weight: 500;
+}
+
+.ctaPrimaryButton {
+  background: linear-gradient(90deg, #5a5c8a, #7b7fa6);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(90,92,138,0.10);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border: none;
+}
+.ctaPrimaryButton:hover {
+  background: linear-gradient(90deg, #7b7fa6, #5a5c8a);
+  color: #fff;
+  transform: scale(1.03) translateY(-1px);
+  box-shadow: 0 8px 24px rgba(90,92,138,0.13);
+}
+
+.ctaSecondaryButton {
+  background: #f7f8fa;
+  color: #5a5c8a;
+  border: 2px solid #b6b6d6;
+  font-weight: 600;
+}
+.ctaSecondaryButton:hover {
+  background: #e9eaf3;
+  color: #5a5c8a;
+  transform: scale(1.03) translateY(-1px);
+}
+
+.statsSection {
+  padding: 80px 20px;
+  background: linear-gradient(135deg, #f7f8fa 0%, #e9eaf3 100%);
+  color: #5a5c8a;
+}
+.statNumber {
+  font-size: 2.2rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  background: linear-gradient(45deg, #7b7fa6, #b6b6d6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+}
+
+.footer {
+  padding: 40px 20px;
+  background: #23223a;
+  color: #fff;
+}
+.footerText {
+  color: #b6b6d6;
+  margin: 0;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .heroContent {
@@ -492,5 +669,26 @@
   .ctaPrimaryButton, .ctaSecondaryButton {
     width: 100%;
     max-width: 250px;
+  }
+}
+
+/* Responsive tối ưu thêm cho mobile */
+@media (max-width: 480px) {
+  .mainTitle {
+    font-size: 2rem;
+  }
+  .sectionTitle, .ctaTitle {
+    font-size: 1.5rem;
+  }
+  .featuresGrid, .statsGrid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .featureCard, .featuresShowcase .featureCard {
+    padding: 18px 10px;
+  }
+  .ctaButtons {
+    flex-direction: column;
+    gap: 12px;
   }
 }

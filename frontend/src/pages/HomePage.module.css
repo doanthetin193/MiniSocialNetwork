@@ -5,11 +5,15 @@
   padding: 20px;
   display: flex;
   gap: 30px;
+  background: #f5f6fa;
+  min-height: 100vh;
 }
 
 .mainContent {
   flex: 1;
   max-width: 600px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .sidebar {
@@ -20,14 +24,43 @@
 }
 
 .header {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  min-height: 0;
 }
-
+.headerLeft {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+.headerCenter {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.headerRight {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
 .title {
   color: #2c3e50;
-  margin-bottom: 15px;
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: 1px;
+}
+.postsWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
 }
 
 .navigation {
@@ -67,6 +100,13 @@
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
+.createPostWrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
 /* ===== SIDEBAR STYLES ===== */
 .sidebarCard {
   background: white;
@@ -75,6 +115,12 @@
   margin-bottom: 20px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   border: 1px solid #f1f3f4;
+}
+
+.sidebarCard.stickyCard {
+  position: sticky;
+  top: 20px;
+  z-index: 10;
 }
 
 .sidebarTitle {
@@ -228,6 +274,11 @@
   margin-bottom: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: box-shadow 0.3s ease;
+  width: 100%;
+  max-width: 540px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 24px;
 }
 
 .postCard:hover {

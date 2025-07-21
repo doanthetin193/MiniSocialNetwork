@@ -10,15 +10,15 @@ const WelcomePage = () => {
         <div className={styles.heroContent}>
           <div className={styles.heroLeft}>
             <div className={styles.logoSection}>
-              <div className={styles.logoIcon}>🌟</div>
-              <h1 className={styles.mainTitle}>MiniSocial</h1>
+              <div className={styles.logoIcon + ' ' + styles.animatedBounce}>🌟</div>
+              <h1 className={styles.mainTitle + ' ' + styles.gradientText}>MiniSocial</h1>
               <p className={styles.mainSubtitle}>
                 Nền tảng mạng xã hội mini - Kết nối, chia sẻ, và trò chuyện
               </p>
             </div>
 
             <div className={styles.actionButtons}>
-              <Link to="/register" className={styles.primaryButton}>
+              <Link to="/register" className={styles.primaryButton + ' ' + styles.animatedPulse}>
                 <span className={styles.buttonIcon}>🚀</span>
                 Tham gia ngay
               </Link>
@@ -31,20 +31,18 @@ const WelcomePage = () => {
 
           <div className={styles.heroRight}>
             <div className={styles.featuresShowcase}>
-              <div className={styles.featureCard}>
-                <div className={styles.featureIcon}>💬</div>
+              <div className={styles.featureCard + ' ' + styles.featureCardLeft}>
+                <div className={styles.featureIconCircle}><span className={styles.featureIcon}>💬</span></div>
                 <h3>Chat Real-time</h3>
                 <p>Trò chuyện trực tiếp với bạn bè</p>
               </div>
-              
-              <div className={styles.featureCard}>
-                <div className={styles.featureIcon}>📝</div>
+              <div className={styles.featureCard + ' ' + styles.featureCardCenter}>
+                <div className={styles.featureIconCircle}><span className={styles.featureIcon}>📝</span></div>
                 <h3>Chia sẻ bài viết</h3>
                 <p>Đăng những khoảnh khắc đẹp</p>
               </div>
-              
-              <div className={styles.featureCard}>
-                <div className={styles.featureIcon}>👥</div>
+              <div className={styles.featureCard + ' ' + styles.featureCardRight}>
+                <div className={styles.featureIconCircle}><span className={styles.featureIcon}>👥</span></div>
                 <h3>Kết nối bạn bè</h3>
                 <p>Tìm kiếm và theo dõi bạn bè</p>
               </div>
@@ -56,14 +54,14 @@ const WelcomePage = () => {
       {/* Features Section */}
       <div className={styles.featuresSection}>
         <div className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>Tính năng nổi bật</h2>
+          <h2 className={styles.sectionTitle + ' ' + styles.gradientText2}>Tính năng nổi bật</h2>
           <p className={styles.sectionSubtitle}>
             Khám phá những tính năng tuyệt vời của MiniSocial
           </p>
         </div>
 
         <div className={styles.featuresGrid}>
-          <div className={styles.featureCard}>
+          <div className={styles.featureCard + ' ' + styles.cardShadow + ' ' + styles.fadeInUp}>
             <div className={styles.featureIcon}>💬</div>
             <h3 className={styles.featureTitle}>Chat Real-time</h3>
             <p className={styles.featureDescription}>
@@ -71,7 +69,7 @@ const WelcomePage = () => {
             </p>
           </div>
 
-          <div className={styles.featureCard}>
+          <div className={styles.featureCard + ' ' + styles.cardShadow + ' ' + styles.fadeInUp} style={{animationDelay: '0.1s'}}>
             <div className={styles.featureIcon}>📱</div>
             <h3 className={styles.featureTitle}>Responsive Design</h3>
             <p className={styles.featureDescription}>
@@ -79,7 +77,7 @@ const WelcomePage = () => {
             </p>
           </div>
 
-          <div className={styles.featureCard}>
+          <div className={styles.featureCard + ' ' + styles.cardShadow + ' ' + styles.fadeInUp} style={{animationDelay: '0.2s'}}>
             <div className={styles.featureIcon}>🖼️</div>
             <h3 className={styles.featureTitle}>Chia sẻ hình ảnh</h3>
             <p className={styles.featureDescription}>
@@ -87,7 +85,7 @@ const WelcomePage = () => {
             </p>
           </div>
 
-          <div className={styles.featureCard}>
+          <div className={styles.featureCard + ' ' + styles.cardShadow + ' ' + styles.fadeInUp} style={{animationDelay: '0.3s'}}>
             <div className={styles.featureIcon}>❤️</div>
             <h3 className={styles.featureTitle}>Tương tác bài viết</h3>
             <p className={styles.featureDescription}>
@@ -95,7 +93,7 @@ const WelcomePage = () => {
             </p>
           </div>
 
-          <div className={styles.featureCard}>
+          <div className={styles.featureCard + ' ' + styles.cardShadow + ' ' + styles.fadeInUp} style={{animationDelay: '0.4s'}}>
             <div className={styles.featureIcon}>👥</div>
             <h3 className={styles.featureTitle}>Quản lý bạn bè</h3>
             <p className={styles.featureDescription}>
@@ -103,7 +101,7 @@ const WelcomePage = () => {
             </p>
           </div>
 
-          <div className={styles.featureCard}>
+          <div className={styles.featureCard + ' ' + styles.cardShadow + ' ' + styles.fadeInUp} style={{animationDelay: '0.5s'}}>
             <div className={styles.featureIcon}>🔔</div>
             <h3 className={styles.featureTitle}>Thông báo real-time</h3>
             <p className={styles.featureDescription}>
@@ -116,19 +114,19 @@ const WelcomePage = () => {
       {/* Stats Section */}
       <div className={styles.statsSection}>
         <div className={styles.statsGrid}>
-          <div className={styles.statItem}>
+          <div className={styles.statItem + ' ' + styles.fadeInUp}>
             <div className={styles.statNumber}>1K+</div>
             <div className={styles.statLabel}>Người dùng</div>
           </div>
-          <div className={styles.statItem}>
+          <div className={styles.statItem + ' ' + styles.fadeInUp} style={{animationDelay: '0.1s'}}>
             <div className={styles.statNumber}>5K+</div>
             <div className={styles.statLabel}>Bài viết</div>
           </div>
-          <div className={styles.statItem}>
+          <div className={styles.statItem + ' ' + styles.fadeInUp} style={{animationDelay: '0.2s'}}>
             <div className={styles.statNumber}>10K+</div>
             <div className={styles.statLabel}>Tin nhắn</div>
           </div>
-          <div className={styles.statItem}>
+          <div className={styles.statItem + ' ' + styles.fadeInUp} style={{animationDelay: '0.3s'}}>
             <div className={styles.statNumber}>24/7</div>
             <div className={styles.statLabel}>Hỗ trợ</div>
           </div>
@@ -136,14 +134,14 @@ const WelcomePage = () => {
       </div>
 
       {/* CTA Section */}
-      <div className={styles.ctaSection}>
-        <div className={styles.ctaContent}>
-          <h2 className={styles.ctaTitle}>Bắt đầu hành trình của bạn</h2>
+      <div className={styles.ctaSection + ' ' + styles.ctaGradientBg}>
+        <div className={styles.ctaContent + ' ' + styles.fadeInUp}>
+          <h2 className={styles.ctaTitle + ' ' + styles.gradientText2}>Bắt đầu hành trình của bạn</h2>
           <p className={styles.ctaSubtitle}>
             Tham gia cộng đồng MiniSocial ngay hôm nay và khám phá những trải nghiệm tuyệt vời
           </p>
           <div className={styles.ctaButtons}>
-            <Link to="/register" className={styles.ctaPrimaryButton}>
+            <Link to="/register" className={styles.ctaPrimaryButton + ' ' + styles.animatedPulse}>
               Tạo tài khoản miễn phí
             </Link>
             <Link to="/login" className={styles.ctaSecondaryButton}>
