@@ -249,7 +249,7 @@ const ChatPage = () => {
             last_sender_id: msg.senderId
           });
         }
-        return updated;
+            return updated;
       });
     };
 

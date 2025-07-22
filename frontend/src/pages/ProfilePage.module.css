@@ -188,6 +188,8 @@
 
 .tabsNav {
   display: flex;
+  width: 100%;
+  justify-content: space-between;
   background: #f8fafc;
 }
 
@@ -202,6 +204,7 @@
   color: #718096;
   transition: all 0.3s ease;
   position: relative;
+  text-align: center;
 }
 
 .tabButton:hover {
@@ -227,12 +230,23 @@
 /* ===== CONTENT SECTIONS ===== */
 .contentSection {
   min-height: 300px;
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 0 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 /* ===== POSTS GRID ===== */
 .postsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 20px;
 }
 
@@ -298,6 +312,15 @@
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   border: 1px solid #e2e8f0;
+  max-width: 500px;
+  margin: 40px auto;
+  padding: 60px 32px;
+  width: 100%;
+  max-width: 400px;
+  margin: 40px auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .emptyIcon {
@@ -323,6 +346,17 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 15px;
+  max-width: 700px;
+  margin: 0 auto;
+  justify-items: center;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  justify-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
 }
 
 .userCard {

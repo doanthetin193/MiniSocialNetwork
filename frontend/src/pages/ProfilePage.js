@@ -289,18 +289,18 @@ const ProfilePage = () => {
                       </>
                     ) : (
                       <>
-                        <div className={styles.postContent}>{post.content}</div>
-                        {post.image_url && (
-                          <img src={post.image_url} alt="Post" className={styles.postImage} />
-                        )}
-                        <div className={styles.postMeta}>
-                          <div className={styles.postLikes}>
-                            ❤️ {post.likes_count || 0}
-                          </div>
-                          <div className={styles.postDate}>
-                            📅 {new Date(post.created_at).toLocaleDateString('vi-VN')}
-                          </div>
-                        </div>
+                    <div className={styles.postContent}>{post.content}</div>
+                    {post.image_url && (
+                      <img src={post.image_url} alt="Post" className={styles.postImage} />
+                    )}
+                    <div className={styles.postMeta}>
+                      <div className={styles.postLikes}>
+                        ❤️ {post.likes_count || 0}
+                      </div>
+                      <div className={styles.postDate}>
+                        📅 {new Date(post.created_at).toLocaleDateString('vi-VN')}
+                      </div>
+                    </div>
                         {isOwnProfile && (
                           <div className={styles.postActions}>
                             <button className={styles.editButton} onClick={() => handleEditPost(post.id, post.content, post.image_url)}>
