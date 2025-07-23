@@ -18,10 +18,11 @@ import ProfilePage from './pages/ProfilePage';
 import SearchPage from './pages/SearchPage';
 import NotificationPage from './pages/NotificationPage';
 import WelcomePage from './pages/WelcomePage';
+import AdminApp from './pages/AdminApp';
 
 const AppContent = () => {
   const location = useLocation();
-  const hideNavbar = location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/welcome';
+  const hideNavbar = location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/welcome' || location.pathname === '/admin';
 
   return (
     <>
@@ -38,6 +39,7 @@ const AppContent = () => {
         <Route path="/users" element={<UsersListPage />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/profile/:userId" element={<ProfilePage />} />
+        <Route path="/admin" element={<AdminApp />} />
       </Routes>
     </>
   );

@@ -41,21 +41,6 @@ const HomePage = () => {
           }
           setLikedPosts(likedSet);
 
-          // Fetch friends and following status - TEMPORARILY DISABLED
-          // TODO: Enable when backend endpoints are available
-          /*
-          try {
-            const followingRes = await axios.get('http://localhost:5000/api/users/following', {
-              headers: { Authorization: `Bearer ${token}` }
-            });
-            setFriends(followingRes.data);
-            const followingIds = new Set(followingRes.data.map(user => user.id));
-            setFollowingSet(followingIds);
-          } catch (err) {
-            console.error('Error fetching following:', err);
-          }
-          */
-
           // Fetch suggested users
           try {
             const usersRes = await axios.get('http://localhost:5000/api/users', {
@@ -66,25 +51,6 @@ const HomePage = () => {
             console.error('Error fetching users:', err);
           }
 
-          // Fetch user stats - TEMPORARILY DISABLED
-          // TODO: Enable when backend endpoint is available  
-          /*
-          try {
-            const statsRes = await axios.get('http://localhost:5000/api/users/stats', {
-              headers: { Authorization: `Bearer ${token}` }
-            });
-            setUserStats(statsRes.data);
-          } catch (err) {
-            console.error('Error fetching stats:', err);
-            // Set default stats if API doesn't exist
-            setUserStats({ 
-              posts: postsRes.data.filter(p => p.user_id === JSON.parse(atob(token.split('.')[1])).userId).length, 
-              following: 0, 
-              followers: 0 
-            });
-          }
-          */
-          
           // Set default stats since backend endpoint not available
           setUserStats({ 
             posts: postsRes.data.filter(p => p.user_id === JSON.parse(atob(token.split('.')[1])).userId).length, 

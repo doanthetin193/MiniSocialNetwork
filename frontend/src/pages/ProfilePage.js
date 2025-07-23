@@ -62,11 +62,65 @@ const ProfilePage = () => {
     }
   }, [userId, isOwnProfile]);
 
+  // Refresh follow status khi vào profile hoặc khi focus lại window
+  useEffect(() => {
+    const refreshFollowData = async () => {
+      if (!userId) return;
+      
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const statusRes = await axios.get(`http://localhost:5000/api/users/${userId}/follow-status`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setFollowStatus(statusRes.data);
+        }
+      } catch (err) {
+        console.error('Lỗi refresh follow status:', err);
+      }
+    };
+
+    // Check for recent follow actions
+    const checkRecentFollowActions = () => {
+      const followActions = JSON.parse(localStorage.getItem('followActions') || '[]');
+      const recentActions = followActions.filter(action => 
+        Date.now() - action.timestamp < 10000 // Actions trong 10 giây gần đây
+      );
+      
+      if (recentActions.length > 0) {
+        refreshFollowData();
+        // Clear old actions
+        localStorage.setItem('followActions', JSON.stringify([]));
+      }
+    };
+
+    refreshFollowData();
+    checkRecentFollowActions();
+
+    // Thêm event listener để refresh khi focus lại tab
+    const handleFocus = () => {
+      checkRecentFollowActions();
+      refreshFollowData();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [userId, activeTab]);
+
   const fetchFollowers = async () => {
     try {
       const res = await axios.get(`http://localhost:5000/api/users/${userId}/followers`);
       setFollowers(res.data);
       setActiveTab('followers');
+      
+      // Cũng refresh follow status để cập nhật số followers
+      const token = localStorage.getItem('token');
+      if (token) {
+        const statusRes = await axios.get(`http://localhost:5000/api/users/${userId}/follow-status`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setFollowStatus(statusRes.data);
+      }
     } catch (err) {
       console.error('Lỗi lấy followers:', err);
     }
@@ -77,9 +131,54 @@ const ProfilePage = () => {
       const res = await axios.get(`http://localhost:5000/api/users/${userId}/following`);
       setFollowing(res.data);
       setActiveTab('following');
+      
+      // Cũng refresh follow status để cập nhật số following
+      const token = localStorage.getItem('token');
+      if (token) {
+        const statusRes = await axios.get(`http://localhost:5000/api/users/${userId}/follow-status`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setFollowStatus(statusRes.data);
+      }
     } catch (err) {
       console.error('Lỗi lấy following:', err);
     }
+  };
+
+  // Tự động refresh following khi vào tab following
+  const handleFollowingTab = () => {
+    // Check for recent follow actions trước khi fetch
+    const followActions = JSON.parse(localStorage.getItem('followActions') || '[]');
+    const recentActions = followActions.filter(action => 
+      Date.now() - action.timestamp < 10000
+    );
+    
+    if (recentActions.length > 0) {
+      localStorage.setItem('followActions', JSON.stringify([]));
+    }
+    
+    // Force refresh dữ liệu mới nhất
+    setTimeout(() => {
+      fetchFollowing();
+    }, 100);
+  };
+
+  // Tự động refresh followers khi vào tab followers
+  const handleFollowersTab = () => {
+    // Check for recent follow actions trước khi fetch
+    const followActions = JSON.parse(localStorage.getItem('followActions') || '[]');
+    const recentActions = followActions.filter(action => 
+      Date.now() - action.timestamp < 10000
+    );
+    
+    if (recentActions.length > 0) {
+      localStorage.setItem('followActions', JSON.stringify([]));
+    }
+    
+    // Force refresh dữ liệu mới nhất
+    setTimeout(() => {
+      fetchFollowers();
+    }, 100);
   };
 
   if (!user) {
@@ -226,13 +325,13 @@ const ProfilePage = () => {
             📝 Bài viết
           </button>
           <button
-            onClick={fetchFollowers}
+            onClick={handleFollowersTab}
             className={`${styles.tabButton} ${activeTab === 'followers' ? styles.active : ''}`}
           >
             👥 Followers
           </button>
           <button
-            onClick={fetchFollowing}
+            onClick={handleFollowingTab}
             className={`${styles.tabButton} ${activeTab === 'following' ? styles.active : ''}`}
           >
             🔔 Following

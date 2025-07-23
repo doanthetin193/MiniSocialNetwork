@@ -117,7 +117,7 @@ const getFollowing = async (req, res) => {
 
     res.json(following);
   } catch (err) {
-    // ...existing code...
+    console.error('Error in getFollowing:', err);
     res.status(500).json({ message: 'Server error' });
   }
 };

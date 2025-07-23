@@ -20,6 +20,15 @@ const FollowButton = ({ userId, initialIsFollowing = false, onFollowUpdate }) =>
 
       setIsFollowing(res.data.isFollowing);
 
+      // Lưu action vào localStorage để ProfilePage có thể detect
+      const followActions = JSON.parse(localStorage.getItem('followActions') || '[]');
+      followActions.push({
+        userId: userId,
+        action: res.data.isFollowing ? 'follow' : 'unfollow',
+        timestamp: Date.now()
+      });
+      localStorage.setItem('followActions', JSON.stringify(followActions));
+
       // Callback để parent component cập nhật
       if (onFollowUpdate) {
         onFollowUpdate(userId, res.data.isFollowing);

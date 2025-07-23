@@ -11,6 +11,7 @@ DROP TABLE IF EXISTS follows;
 DROP TABLE IF EXISTS messages;
 DROP TABLE IF EXISTS comments;
 DROP TABLE IF EXISTS posts;
+DROP TABLE IF EXISTS admins;
 DROP TABLE IF EXISTS users;
 
 -- 4. Bảng người dùng
@@ -78,7 +79,19 @@ CREATE TABLE follows (
     CHECK (follower_id != following_id)
 );
 
--- 10. Bảng thông báo
+-- 10. Bảng admin
+CREATE TABLE admins (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    full_name VARCHAR(100) NOT NULL,
+    role ENUM('super_admin', 'admin', 'moderator') DEFAULT 'admin',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 11. Bảng thông báo
 CREATE TABLE notifications (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,                    -- Người nhận thông báo
@@ -96,3 +109,16 @@ CREATE TABLE notifications (
     
     INDEX idx_user_notifications (user_id, is_read, created_at DESC)
 );
+
+-- ===============================
+-- THÊM DỮ LIỆU MẪU CHO ADMIN
+-- ===============================
+
+-- Tạo tài khoản admin mặc định (password: admin123)
+INSERT INTO admins (username, email, password_hash, full_name, role) VALUES 
+('admin', 'admin@minisocial.com', '$2b$10$.j78or53emKmMRhu83oDlOUEIIAtNuqJkT5nwXhKjHnQ900aVAvxG', 'System Administrator', 'super_admin');
+
+-- Lưu ý: password_hash trên tương ứng với password "admin123"
+-- Bạn có thể đăng nhập admin với:
+-- Username: admin
+-- Password: admin123
