@@ -17,6 +17,7 @@ const ProfilePage = () => {
   const [editingImage, setEditingImage] = useState(null);
   const [editingImagePreview, setEditingImagePreview] = useState(null);
   const [editingImageUrl, setEditingImageUrl] = useState('');
+  const [showEditModal, setShowEditModal] = useState(false);
   
   const currentUser = JSON.parse(localStorage.getItem('user'));
   const isOwnProfile = currentUser && currentUser.id === parseInt(userId);
@@ -98,6 +99,7 @@ const ProfilePage = () => {
     setEditingImage(null);
     setEditingImagePreview(null);
     setEditingImageUrl(image_url || '');
+    setShowEditModal(true);
   }
   function handleEditImageChange(e) {
     const file = e.target.files[0];
@@ -136,6 +138,7 @@ const ProfilePage = () => {
       setEditingImage(null);
       setEditingImagePreview(null);
       setEditingImageUrl('');
+      setShowEditModal(false);
     } catch (err) {
       alert('Lỗi khi cập nhật bài viết!');
     }
@@ -146,6 +149,7 @@ const ProfilePage = () => {
     setEditingImage(null);
     setEditingImagePreview(null);
     setEditingImageUrl('');
+    setShowEditModal(false);
   }
   async function handleDeletePost(postId) {
     if (!window.confirm('Bạn có chắc muốn xóa bài viết này?')) return;
@@ -244,51 +248,6 @@ const ProfilePage = () => {
               <div className={styles.postsGrid}>
                 {posts.map((post) => (
                   <div key={post.id} className={styles.postCard}>
-                    {editingPostId === post.id ? (
-                      <>
-                        <textarea
-                          className={styles.editTextarea}
-                          value={editingContent}
-                          onChange={e => setEditingContent(e.target.value)}
-                          rows={4}
-                        />
-                        <div className={styles.editUploadSection}>
-                          <input
-                            type="file"
-                            onChange={handleEditImageChange}
-                            accept="image/*"
-                            className={styles.uploadInput}
-                          />
-                          {!editingImagePreview && !editingImageUrl ? (
-                            <div className={styles.uploadText}>Thêm ảnh vào bài viết</div>
-                          ) : (
-                            <div className={styles.imagePreview}>
-                              <img
-                                src={editingImagePreview || editingImageUrl}
-                                alt="Preview"
-                                className={styles.previewImage}
-                              />
-                              <button
-                                type="button"
-                                onClick={handleRemoveEditImage}
-                                className={styles.removeImageButton}
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                        <div className={styles.postActions}>
-                          <button className={styles.saveButton} onClick={() => handleSaveEdit(post.id)}>
-                            💾 Lưu
-                          </button>
-                          <button className={styles.cancelButton} onClick={handleCancelEdit}>
-                            ❌ Hủy
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
                     <div className={styles.postContent}>{post.content}</div>
                     {post.image_url && (
                       <img src={post.image_url} alt="Post" className={styles.postImage} />
@@ -301,17 +260,15 @@ const ProfilePage = () => {
                         📅 {new Date(post.created_at).toLocaleDateString('vi-VN')}
                       </div>
                     </div>
-                        {isOwnProfile && (
-                          <div className={styles.postActions}>
-                            <button className={styles.editButton} onClick={() => handleEditPost(post.id, post.content, post.image_url)}>
-                              ✏️ Sửa
-                            </button>
-                            <button className={styles.deleteButton} onClick={() => handleDeletePost(post.id)}>
-                              🗑️ Xóa
-                            </button>
-                          </div>
-                        )}
-                      </>
+                    {isOwnProfile && (
+                      <div className={styles.postActions}>
+                        <button className={styles.editButton} onClick={() => handleEditPost(post.id, post.content, post.image_url)}>
+                          ✏️ Sửa
+                        </button>
+                        <button className={styles.deleteButton} onClick={() => handleDeletePost(post.id)}>
+                          🗑️ Xóa
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -398,6 +355,55 @@ const ProfilePage = () => {
           </div>
         )}
       </div>
+
+      {/* Modal chỉnh sửa bài viết */}
+      {showEditModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <h2 className={styles.modalTitle}>Chỉnh sửa bài viết</h2>
+            <textarea
+              className={styles.editTextarea}
+              value={editingContent}
+              onChange={e => setEditingContent(e.target.value)}
+              rows={4}
+            />
+            <div className={styles.editUploadSection}>
+              <input
+                type="file"
+                onChange={handleEditImageChange}
+                accept="image/*"
+                className={styles.uploadInput}
+              />
+              {!editingImagePreview && !editingImageUrl ? (
+                <div className={styles.uploadText}>Thêm ảnh vào bài viết</div>
+              ) : (
+                <div className={styles.imagePreview}>
+                  <img
+                    src={editingImagePreview || editingImageUrl}
+                    alt="Preview"
+                    className={styles.previewImage}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemoveEditImage}
+                    className={styles.removeImageButton}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className={styles.modalActions}>
+              <button className={styles.saveButton} onClick={() => handleSaveEdit(editingPostId)}>
+                💾 Lưu
+              </button>
+              <button className={styles.cancelButton} onClick={handleCancelEdit}>
+                ❌ Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
