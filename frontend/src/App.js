@@ -19,19 +19,21 @@ import SearchPage from './pages/SearchPage';
 import NotificationPage from './pages/NotificationPage';
 import WelcomePage from './pages/WelcomePage';
 import AdminApp from './pages/AdminApp';
+import AuthChecker from './components/AuthChecker';
 
 const AppContent = () => {
   const location = useLocation();
   const hideNavbar = location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/welcome' || location.pathname === '/admin';
 
   return (
-    <>
+    <AuthChecker>
       {!hideNavbar && <Navbar />}
       <Routes>
         <Route path="/welcome" element={<WelcomePage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<div>Loading...</div>} />
+        <Route path="/home" element={<HomePage />} />
         <Route path="/create-post" element={<CreatePostPage />} />
         <Route path="/myposts" element={<MyPostsPage />} />
         <Route path="/chat" element={<ChatPage />} />
@@ -41,7 +43,7 @@ const AppContent = () => {
         <Route path="/profile/:userId" element={<ProfilePage />} />
         <Route path="/admin" element={<AdminApp />} />
       </Routes>
-    </>
+    </AuthChecker>
   );
 };
 

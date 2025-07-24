@@ -13,7 +13,7 @@ const Navbar = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    navigate('/login');
+    navigate('/welcome');
   };
 
   const isActiveLink = (path) => location.pathname === path;
@@ -21,15 +21,15 @@ const Navbar = () => {
   return (
     <nav className={styles.navbar}>
       {/* Brand/Logo */}
-      <Link to="/" className={styles.brand}>
+      <Link to="/home" className={styles.brand}>
         🌟 MiniSocial
       </Link>
 
       {/* Desktop Navigation Links */}
       <div className={styles.navLinks}>
         <Link 
-          to="/" 
-          className={`${styles.navLink} ${isActiveLink('/') ? styles.active : ''}`}
+          to="/home" 
+          className={`${styles.navLink} ${isActiveLink('/home') ? styles.active : ''}`}
         >
           🏠 Trang chủ
         </Link>
@@ -80,7 +80,7 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       <div className={`${styles.mobileMenu} ${mobileMenuOpen ? styles.open : ''}`}>
-        <Link to="/" className={styles.mobileNavLink}>🏠 Trang chủ</Link>
+        <Link to="/home" className={styles.mobileNavLink}>🏠 Trang chủ</Link>
         <Link to="/users" className={styles.mobileNavLink}>👥 Người dùng</Link>
         <Link to="/chat" className={styles.mobileNavLink}>💬 Chat</Link>
       </div>

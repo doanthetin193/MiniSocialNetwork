@@ -72,7 +72,7 @@ function RegisterPage() {
       
       setSuccess('Đăng ký thành công! Đang đưa bạn vào hệ thống...');
       setTimeout(() => {
-        navigate('/'); // Chuyển về trang chủ
+        navigate('/home'); // Chuyển về trang chủ
       }, 1500);
     } catch (err) {
       console.error(err);

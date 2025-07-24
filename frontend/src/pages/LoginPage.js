@@ -34,7 +34,7 @@ const Login = () => {
 
       setSuccess('Đăng nhập thành công!');
       setTimeout(() => {
-        navigate('/');
+        navigate('/home');
       }, 1000);
     } catch (err) {
       // ...existing code...
